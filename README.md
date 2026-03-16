@@ -1,4 +1,4 @@
-# Project-W
+# Monogame-Custom-Template
 
 ## monogame-vscode-boilerplate
 
