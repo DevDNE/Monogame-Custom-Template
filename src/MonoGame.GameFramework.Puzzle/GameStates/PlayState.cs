@@ -70,7 +70,7 @@ public class PlayState : GameState
         else if (_board.AreAdjacent(first, (col, row)))
         {
           bool matched = _board.TrySwap(first, (col, row));
-          _lastEvent = matched ? $"Match! Score {_board.Score}" : "No match — reverted";
+          _lastEvent = matched ? $"Match! Score {_board.Score}" : "No match - reverted";
           _selected = null;
         }
         else
