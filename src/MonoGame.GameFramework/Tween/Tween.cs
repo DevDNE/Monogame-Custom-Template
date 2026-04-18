@@ -22,7 +22,7 @@ public class Tween<T>
     Duration = duration;
     _interpolator = interpolator ?? throw new ArgumentNullException(nameof(interpolator));
     _easing = easing ?? Easing.Linear;
-    Current = from;
+    Current = duration <= 0f ? to : from;
   }
 
   public T Update(float deltaSeconds)
