@@ -261,14 +261,14 @@ Some library code was written speculatively and hasn't earned its place yet. Not
 | `Timer` / `TimerManager` | **Partially validated in Shooter** | `TimerManager.Every` fits enemy spawn waves perfectly (§1.7). Raw `Timer` class still unused. BattleGrid's four hand-rolled countdowns still argue for a simpler `CountdownTimer` shape. |
 | `Tween<T>` / `Easing` | Unused after 4 games | BattleGrid's sword-flash alpha and Puzzle's gem-fall animation are the obvious customers; both skipped for MVP scope. If the first polish pass on either doesn't reach for Tween, delete it. |
 | `SaveSystem` / `SaveFile` | Unused | First persistent progress |
-| `TileMap` / `TileLayer` | Unused | BattleGrid hand-rolls a 3×3×2 grid via two `SpriteSheet[,]` arrays plus `Grid.cs` helpers. Platformer hand-rolls a `List<Platform>`. Both would fit `TileMap`/`TileLayer` almost perfectly — the only reason neither uses it is inertia. |
+| `TileMap` / `TileLayer` | **Validated in Puzzle** | Clean API in practice; three sharp edges in §1.9 (cache `GetLayer<T>`, add `TryWorldToCell`, add `TileLayer.Swap`). BattleGrid and Platformer still hand-roll their grids; migrating them is reasonable follow-up. |
 | `AssetCatalog` | Unused | Any game with ≥ 10 content entries. Both samples are down to one asset each (the font). |
 | `ILogger` / `ConsoleLogger` | Unused | First debugging session painful enough to add logging. `ConsoleUI` partially fills this role in BattleGrid but doesn't use the library's logger. |
 | `MathUtilities` | Unused after 3 games | Shooter used `System.Random` + `Vector2.Normalize` + `Math.Clamp` directly — `MathUtilities.Angle`/`RandomFloat`/`RandomInt` never felt missing. Strong candidate for deletion if puzzle + roguelike also skip it. |
 | `PerformanceMonitor` | Unused | First perf complaint |
 | `EventManager.Subscribe<T>`/`Publish<T>` (typed) | Unused | Any game that grows past ~5 event types. BattleGrid's event set (PlayerMoved/PlayerHit/EnemyHit/FiredProjectile) stayed small enough that the string API is still fine. |
 
-After three games, two primitives moved off the speculative list (`ObjectPool`, `TimerManager.Every`). The remaining unused set (~25% of public API) is unchanged. Most aggressive candidates to remove if puzzle + roguelike also don't use them: `PerformanceMonitor`, typed `EventManager` API, `MathUtilities` (all of it), raw `Timer` class, `Core.Entity`, `SpriteSheet.Animated` (never used — all three games use `Static` only).
+After four games, three primitives moved off the speculative list (`ObjectPool`, `TimerManager.Every`, `TileMap`/`TileLayer`). The remaining unused set is ~10 primitives. Most aggressive deletion candidates if Roguelike also skips them: `PerformanceMonitor`, typed `EventManager` API, all of `MathUtilities`, raw `Timer` class, `Core.Entity`, `SpriteSheet.Animated`, `SoundManager` (not a single game has needed sound), `AssetCatalog` (no game has >1 content asset).
 
 ---
 
