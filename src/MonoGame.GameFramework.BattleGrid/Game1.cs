@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
+using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Audio;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
@@ -15,20 +15,20 @@ namespace MonoGame.GameFramework.BattleGrid;
 
 public class Game1 : Game
 {
-    private GraphicsDeviceManager _graphics;
     private readonly ServiceProvider _serviceProvider;
-    private DrawManager _drawManager;
-    private TextManager _textManager;
+    private readonly GraphicsDeviceManager _graphics;
+    private SpriteBatch _spriteBatch;
+    private SpriteFont _font;
+
     private SettingsManager _settingsManager;
-    private UIManager _uiManager;
+    private TextManager _textManager;
     private SoundManager _soundManager;
     private KeyboardManager _keyboardManager;
     private MouseManager _mouseManager;
     private GamePadManager _gamePadManager;
+    private UIManager _uiManager;
     private GameStateManager _gameStateManager;
     private SceneManager _sceneManager;
-    private SpriteBatch _spriteBatch;
-    private GameState initialState;
 
     public Game1(ServiceProvider serviceProvider)
     {
@@ -49,27 +49,36 @@ public class Game1 : Game
     protected override void Initialize()
     {
         Window.Title = _settingsManager.WindowTitle;
-        _drawManager = _serviceProvider.GetService<DrawManager>();
         _textManager = _serviceProvider.GetService<TextManager>();
-        _uiManager = _serviceProvider.GetService<UIManager>();
         _soundManager = _serviceProvider.GetService<SoundManager>();
         _keyboardManager = _serviceProvider.GetService<KeyboardManager>();
         _mouseManager = _serviceProvider.GetService<MouseManager>();
         _gamePadManager = _serviceProvider.GetService<GamePadManager>();
+        _uiManager = _serviceProvider.GetService<UIManager>();
         _gameStateManager = _serviceProvider.GetService<GameStateManager>();
         _sceneManager = _serviceProvider.GetService<SceneManager>();
-        Primitives.Initialize(GraphicsDevice);
-        initialState = new BattleState(_serviceProvider);
-        _gameStateManager.PushState(initialState);
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _textManager.LoadContent(Content.Load<SpriteFont>("fonts/Arial"));
+        Primitives.Initialize(GraphicsDevice);
+        _font = Content.Load<SpriteFont>("fonts/Arial");
+        _textManager.LoadContent(_font);
         _soundManager.LoadContent(Content);
         _sceneManager.LoadContent(Content);
+
+        int vw = _settingsManager.WindowWidth;
+        int vh = _settingsManager.WindowHeight;
+
+        PlayState playState = new(_serviceProvider);
+        TitleState titleState = new(
+            _serviceProvider, _font, vw, vh,
+            onPlay: () => _gameStateManager.ChangeState(playState),
+            onQuit: Exit);
+
+        _gameStateManager.PushState(titleState);
     }
 
     protected override void Update(GameTime gameTime)
@@ -77,6 +86,7 @@ public class Game1 : Game
         _keyboardManager.Update();
         _mouseManager.Update();
         _gamePadManager.Update();
+        if (_keyboardManager.IsKeyDown(Keys.Escape)) Exit();
         _uiManager.Update(gameTime);
         _gameStateManager.Update(gameTime);
         base.Update(gameTime);
@@ -84,12 +94,8 @@ public class Game1 : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-        _spriteBatch.Begin();
-        _drawManager.Draw(_spriteBatch);
+        GraphicsDevice.Clear(new Color(18, 22, 34));
         _gameStateManager.Draw(_spriteBatch, gameTime);
-        _textManager.Draw(_spriteBatch);
-        _spriteBatch.End();
         base.Draw(gameTime);
     }
 
