@@ -404,83 +404,134 @@ Deferred — wait for a trigger:
 
 ---
 
-## §8 — Recommended next library work (prioritized, from 5-game data)
+## §8 — Recommended next library work (prioritized, from 9-game data)
 
-Five games across five genres (grid-duel, platformer, twin-stick shooter, match-3 puzzle, turn-based roguelike) are in hand. The signal is as strong as it's going to get without shipping a real project. This section turns every preceding observation into a concrete, actionable decision: **do this**, **delete this**, **hold for trigger**, or **do not build this**.
+Nine games across nine genres — grid-duel, platformer, twin-stick shooter, match-3 puzzle, turn-based roguelike, tower defense, rhythm, visual novel, auto-chess — are all playable end-to-end. This is the fullest picture the exercise can produce without shipping a real project. This section turns every preceding observation into a concrete, actionable decision: **do this**, **delete this**, **hold for trigger**, or **do not build this**.
 
 Tiers are ordered by priority. Each item names the section it came from for traceability.
 
+### Library primitives validated by this exercise
+
+The following primitives moved off the speculative list over the course of the 9 samples:
+
+| Primitive | Validating consumer(s) | Notes |
+|---|---|---|
+| `Input.KeyboardManager` | all 9 | universal |
+| `Input.MouseManager` | 8 of 9 (Roguelike skipped) | universal-ish |
+| `Rendering.Primitives` | all 9 | universal |
+| `Rendering.SpriteSheet.Static` + `Tint` | all 9 title screens | universal |
+| `Lifecycle.GameState` + auto-lifecycle | all 9 | universal |
+| `UI.UIManager` (hit-test + OnClick + HoveredElement) | all 9 title screens | universal |
+| `Rendering.Camera2D` (follow + view matrix) | Platformer, Shooter | 2 consumers, distinct patterns |
+| `Rendering.TileMap` + `TileLayer<T>` | Puzzle, Roguelike | 2 scales: 49 cells vs 2040 cells |
+| `Pooling.ObjectPool<T>` | Shooter, TowerDefense | 2 consumers, real load |
+| `Timing.TimerManager.Every` | Shooter, TowerDefense | spawn cadence |
+| `Audio.SoundManager` | Rhythm | ~55 PlaySoundEffect calls/session |
+| `Persistence.SaveSystem` | VisualNovel | Save/TryLoad/Exists/Delete |
+| `Tween.Tween<T>` + `Easing` | VisualNovel | text-reveal, caveat §1.14 |
+| `Events.EventManager` (string API) | BattleGrid, DebugState console | |
+| `Events.EventManager.Subscribe<T>`/`Publish<T>` (typed) | AutoBattler | combat events |
+
+**That's roughly 70% of the public API now validated by at least one real consumer.** The remaining ~30% is the deletion-candidate list below.
+
 ### Tier A — Do now (safety + trivial wins)
 
-These are small, backward-compatible, and have concrete evidence. Build them before the next game.
+Small, backward-compatible, concrete evidence. Build them before the next game or the first real project.
 
-1. **Widen default spritefont charset** (§1.10). Update both the sample-game template and each existing game's `Content/fonts/Arial.spritefont` to cover U+0020..U+00FF plus common typographic punctuation (em-dash, en-dash, curly quotes, ellipsis). Zero API change; just a content-pipeline setting. Prevents the class of crash Puzzle hit at runtime. **~5 lines of XML per game.**
-2. **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). 3-line helper; Puzzle would have used it.
-3. **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** returning `bool` (§1.9). Bounds-clamping variant. Puzzle added the check itself because the existing `WorldToCell` returns out-of-bounds silently.
-4. **Document the `cache-GetLayer<T>` pattern in CLAUDE.md**. Existing `TileMap` consumers all cache the layer reference in their constructor; this is the intended usage. One sentence in docs.
+1. **Widen default spritefont charset** (§1.10). Update the sample-game template and all nine existing games' `Content/fonts/Arial.spritefont` to cover U+0020..U+00FF + common typographic punctuation. Prevents the em-dash crash class. **~5 lines XML per game, plus template.**
+2. **Rename `Tween` namespace or class to fix the collision** (§1.14). The `using MonoGame.GameFramework.Tween;` / `Tween.Float(...)` conflict forced an ugly `TweenOf` alias in both VN's `PlayState` and the test project. Rename the namespace to `MonoGame.GameFramework.Tweening` (keeps the static class called `Tween`, which reads best). ~6 files touched.
+3. **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). 3-line helper; Puzzle wanted it.
+4. **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** returning `bool` (§1.9). Bounds-clamping variant; Puzzle/TD/AutoBattler all added bounds-checks themselves.
+5. **`Grid.TryMouseToCell(mouse, origin, cellSize, cols, rows, out col, out row)` helper** — the mouse-position-to-grid-cell conversion appears in Puzzle, TowerDefense, AutoBattler (three consumers). ~8 lines. Not `UIManager`'s job (see §1 note on why grid-click is different from button-click).
+6. **Document `TimerManager.Every` return-value cancellability** in CLAUDE.md. TowerDefense missed that `Every` returns a `Timer` with a `Cancel()` method. One-paragraph doc fix.
+7. **Document the `cache-GetLayer<T>` pattern** in CLAUDE.md. All `TileMap` consumers cache the layer reference in their constructor; the intended usage isn't obvious from the API.
+8. **Warn in `SoundManager.PlaySoundEffect` when the sound isn't loaded** (§1 Rhythm). Silent no-op is a real bug class. One-line log or throw.
 
-### Tier B — Delete (high confidence after 5 games)
+**Total Tier A**: ~1 day of work.
 
-Each has zero or near-zero consumers across five genre-diverse games and isn't "the kind of utility that'll land in game 6" — they've been actively rejected or bypassed.
+### Tier B — Delete (high confidence after 9 games)
 
-1. **`Core.Entity`** — 4 of 5 games skip it. Roguelike's `Actor` class is structurally incompatible. §4.3 and the Roguelike bullet above.
-2. **`SpriteSheet.Animated`** — five games, zero consumers. All games use `SpriteSheet.Static` (for buttons) or draw rectangles directly.
-3. **`Utilities.MathUtilities`** — five games, zero consumers. Callers reach for `Vector2.Normalize`, `Math.Clamp`, and `System.Random` directly. Keep those as the idiom.
-4. **`Timing.Timer` (raw class)** — five games, zero consumers. Only `TimerManager.Every` gets used.
-5. **`Events.EventManager.Subscribe<T>`/`Publish<T>` (typed API)** — five games, zero consumers. The string API handles every game's event set. Keep the string API; delete the typed pair.
-6. **`Debugging.PerformanceMonitor`** — five games, zero consumers. If perf problems surface later, `GC.GetTotalMemory` + a frame counter is 10 lines. No need for a class.
+Each has zero consumers across nine genre-diverse games. The remaining "kind of utility that'll land in game 6" argument gets thinner with every game that skips them.
 
-**Estimated deletion**: ~400 lines across those six, plus matching test removals. Net simpler library.
+1. **`Core.Entity`** — 8 of 9 games skip it. BattleGrid is the only subscriber; Roguelike's `Actor` and AutoBattler's `Unit` are materially different shapes. Deletion saves a class + ~20 lines across consumers.
+2. **`SpriteSheet.Animated`** — 9 games, zero consumers. All games use `SpriteSheet.Static` only (for buttons) or draw rectangles directly. The factory + frame-cycling path is dead code.
+3. **`Utilities.MathUtilities`** — 9 games, zero consumers. Callers reach for `Vector2.Normalize` / `Math.Clamp` / `System.Random` directly. `Angle` / `RandomFloat` / `RandomInt` / `RandomVector2` all unused.
+4. **`Timing.Timer` (raw class)** — 9 games, zero direct consumers. Only `TimerManager.Every/After/Over` get used, and those internally manage `Timer` instances.
+5. **`Debugging.PerformanceMonitor`** — 9 games, zero consumers. A 4-line `GC.GetTotalMemory` + frame-counter snippet in any `Game1` covers this when needed.
 
-### Tier C — Hold (unused but has a clear future trigger)
+**Estimated deletion**: ~350 lines across those five, plus matching tests.
+
+**Explicitly NOT deleted** (contrary to the 5-game recommendation): `Events.EventManager.Subscribe<T>`/`Publish<T>`. AutoBattler validated it with a real multi-event combat system. Keep both APIs.
+
+### Tier C — Hold (unused but with a clear future trigger)
 
 Don't build or delete. Reassess when the trigger fires.
 
-1. **`Audio.SoundManager`** — triggers on the first game that wants sound. All five samples are silent; a sixth probably won't be.
-2. **`Persistence.SaveSystem` / `SaveFile<T>`** — triggers on the first game with persistent progress (high score, run history, settings).
-3. **`Content.AssetCatalog`** — triggers at ~10 content entries in one game. Currently each game has 1 (the font).
-4. **`Tween.Tween<T>` / `Easing`** — triggers on the first polish pass. Gem-fall (Puzzle), sword flash fade (BattleGrid), camera shake easing all want this. If the next polish pass on any game doesn't reach for Tween, demote to Tier B.
-5. **`Debugging.ILogger` / `ConsoleLogger`** — triggers on the first painful debugging session. BattleGrid's `ConsoleUI` partially fills this role but is UI-coupled.
-6. **`Rendering.DrawManager`** — not in the delete list because it *is* used (BattleGrid + Platformer), but the 2-of-5 adoption rate says it's optional, not essential. Keep it; stop treating it as the default rendering pattern. Update CLAUDE.md accordingly.
+1. **`Content.AssetCatalog`** — triggers at ~10 content entries in one game. Current games have 1 (font) or 2 (font + click.wav).
+2. **`Debugging.ILogger` / `ConsoleLogger`** — triggers on the first painful debugging session. BattleGrid's `ConsoleUI` partially fills this role but is UI-coupled.
+3. **`Rendering.DrawManager`** — only 2 of 9 games use it (BattleGrid, Platformer). The other 7 draw directly. Keep it; stop treating it as the default rendering pattern. Update CLAUDE.md to reflect that direct-draw is fine.
 
-### Tier D — Extract these patterns from game code (library wins from 5-game evidence)
+### Tier D — Extract these patterns from game code (library wins from 9-game evidence)
 
-Patterns that appeared in 3+ games as identical copy-paste. These are the highest-leverage additions the library can get from this exercise.
+Patterns that repeated across 3+ games as near-identical copy-paste. These are the highest-leverage library additions the exercise can produce.
 
-1. **`Lifecycle.TitleState` base class / `MenuBuilder` helper**. Five games, ~80 lines of identical copy-paste each. The variation is:
-   - Background color (one `Color`).
-   - Title + subtitle + hint strings.
-   - Button labels + `Action` callbacks.
-   - Button layout (center-stack in all 5 games).
+1. **`Lifecycle.TitleScreenState` base class** — **9 games, ~80 lines of near-identical copy-paste each** (~720 lines total duplicated). Variation is tiny: background color, title/subtitle/hint strings, button labels, button callbacks. Base class with overridable `Title` / `Subtitle` / `Hint` / `Buttons` properties collapses each usage to ~30 lines. **Highest priority** — single biggest extraction win.
 
-   A base class `abstract class TitleScreenState : GameState` with overridable `Title`/`Subtitle`/`Hint`/`Buttons` properties would collapse each to ~30 lines of actual variation. **High priority — appears in every game.**
+2. **`UI.HpBar(rect, current, max, fill, background?)` drawing helper** — 5 games (BattleGrid, Shooter, Roguelike, TowerDefense, AutoBattler) hand-roll the same 3-rectangle pattern (bg + fill + optional border). ~10 lines per game. **High priority.**
 
-2. **`UI.HpBar(rect, current, max, fill, background?, border?)` drawing helper**. BattleGrid, Shooter, Roguelike all hand-roll the same 4-rectangle bar (bg + fill + 4 border strips). **High priority — appears in 3 of 5 games, zero variation in structure.**
+3. **`UI.LogBox`** scrolling-text widget — 4 games (BattleGrid, Shooter, Roguelike, AutoBattler) hand-roll ~20-line scrolling text panels, some with fade. **Medium priority.**
 
-3. **`UI.LogBox`** scrolling-text widget (§1.13). BattleGrid, Shooter, Roguelike all hand-roll ~20-line scrolling text panels. Minor variation in fade style. **Medium priority — genuinely shared code, but simple enough that hand-rolling isn't painful.**
+4. **`Text.WrapText(string, SpriteFont, float maxWidth)`** — VN hand-rolled a word-wrap helper; any game with flavor text longer than a line wants it. 1 consumer today but the pattern is obvious and low-effort (~15 lines). **Medium priority** — build when the second text-heavy game appears.
 
-4. **`Pooling.PooledEntitySet<T>`** helper (§1.6). Shooter's pattern. Only one consumer today — *defer until a second pooled-entity game appears*. Flagged here so it's not forgotten.
+5. **`Pooling.PooledEntitySet<T>`** — 2 consumers (Shooter, TowerDefense) independently hand-rolled the same rent/update/cull loop. ~30-line helper eliminates ~20 lines per consumer. **Medium priority**, now ready for extraction after two validations.
 
-5. **`Timing.CountdownTimer` struct** — `float remaining; bool Tick(float dt) => (remaining -= dt) <= 0;`. BattleGrid's four hand-rolled countdowns (§5/§1.7). Extraction if BattleGrid is revisited; otherwise defer until a game ships ≥3 of these.
+6. **`Timing.CountdownTimer` struct** — `float remaining; bool Tick(float dt) => (remaining -= dt) <= 0`. BattleGrid has 4, Rhythm has 4 (per-lane flash), AutoBattler has 1 (tick accum). Several consumers, minimal code. **Low priority** — three-line pattern isn't painful inline, but a named primitive helps readability.
+
+7. **`UI.DragHandler`** — AutoBattler hand-rolled drag-start/update/end for card placement. Single consumer today, not enough signal. **Deferred** — revisit if a second drag-and-drop game appears.
 
 ### Tier E — Do NOT build (explicitly rejected after evidence)
 
-These are temptations that the data has disarmed.
+Temptations the data has disarmed.
 
-1. **`TurnScheduler` library primitive** (§1.11). BattleGrid and Roguelike both have turn-ish logic, but implementations don't share meaningful code. Resist.
-2. **Genre modules** (`Platformer`, `GridDuel`, etc.). All five games share almost nothing at the gameplay layer. Extraction today would be sample-of-one for every genre. *Revisit if a second platformer or second grid-duel game ever appears.*
-3. **Procgen helpers in the library** (§1.12). Per-game. `TileLayer<T>` is the correct stopping point.
-4. **Per-game state-visibility split** (§1.5 was open, now reassessed). BattleGrid's inline `Mode` enum works fine; three more games shipped without hitting this friction again. Demote from "build this" to "monitor". If a sixth game needs a pause overlay with a different mechanism than BattleGrid's, revisit.
+1. **`TurnScheduler` library primitive** (§1.11). BattleGrid, Roguelike, AutoBattler all have turn/tick logic; implementations don't share meaningful code. Each ~10-line tick loop does what it needs. Resist.
+2. **Genre modules** (`Platformer`, `GridDuel`, etc.). 9 games share almost nothing at the gameplay layer. Extraction today would be sample-of-one for every genre. *Only revisit if a second game in the same genre appears.*
+3. **Procgen helpers in the library** (§1.12). Per-game. Roguelike's `DungeonGenerator` is ~80 lines that operate entirely on `TileLayer<T>`; a second roguelike would want different generation anyway.
+4. **Library-level pathfinding** (§1 AutoBattler). AutoBattler's hand-rolled BFS is sample-of-one. The shape of a library API is now clear (blocker-predicate delegate + `TileLayer<T>` operand + full-path vs. next-step return), but extracting it today would design against imagined needs. **Revisit when a second pathfinding consumer appears.**
+5. **Extending `TextManager` for dynamic text** — 4 games that "should" use `TextManager` (BattleGrid flavor text, VN reveal, Rhythm score, TowerDefense wave text) actively skipped it for direct `SpriteBatch.DrawString`. The handle-based API fits persistent HUD labels; don't grow it for dynamic text. `TextManager` stays, constrained to its current use case.
+6. **Per-game state-visibility split** (§1.5 was open after BattleGrid, now reassessed). Eight more games shipped without hitting this friction. BattleGrid's inline `Mode` enum and AutoBattler's multi-state graph both work cleanly. Demote from "build this" to "monitor".
+7. **`UIManager` drag-and-drop built-in**. AutoBattler hand-rolled it in 30 lines. Single consumer. Don't extend `UIManager` without a second data point.
 
 ### Tier F — Still trigger-driven (no change)
 
 - Particle system — first game needing dust/sparks/trails.
 - Input rebinding — first user friction.
-- Pathfinding — first game with a smart AI.
 - FOV — second roguelike or stealth game.
 - Dev console overlay — first painful debugging session.
-- GUI widgets beyond HpBar/LogBox — first menu-heavy screen.
+- GUI widgets beyond `HpBar`/`LogBox`/title buttons — first menu-heavy screen (settings, pause, inventory).
 - Shader / post-processing helpers — first screen-space effect.
+- Physics beyond AABB — first game needing circles/polygons.
+
+### Suggested execution order
+
+If you want to act on this in a focused session:
+
+| # | Commit | Effort |
+|---|---|---|
+| 1 | `chore: widen spritefont charset + rename Tween namespace (§1.14) + small grid/timer helpers (Tier A)` | 2 hours |
+| 2 | `refactor: delete unused primitives (Core.Entity, SpriteSheet.Animated, MathUtilities, raw Timer, PerformanceMonitor)` + migrate BattleGrid's `Entity` subscribers | 2 hours |
+| 3 | `feat: Lifecycle.TitleScreenState base class` + migrate all 9 games | 2 hours |
+| 4 | `feat: UI.HpBar drawing helper` + migrate 5 games | 1 hour |
+| 5 | `feat: UI.LogBox widget` + migrate 4 games | 1 hour |
+| 6 | `feat: Pooling.PooledEntitySet<T>` + migrate Shooter and TowerDefense | 1 hour |
+
+**Total**: roughly a productive day's work. Net result: the library is objectively smaller, more focused, and duplicates less across the 9 consumer games. The data to justify every change is on file above.
+
+### What actually mattered in hindsight
+
+Two meta-observations after nine sample games:
+
+1. **The delete list is bigger than the extract list.** Five primitives with zero consumers, five patterns with 3+ consumers. Library code that's not actively validated is more often wrong than right.
+2. **The biggest win was free.** `Rendering.Primitives` (pixel texture + DrawRectangle helper) is one file, ~20 lines, and is universal across all 9 games. None of the bigger primitives had that leverage. When in doubt, the library's future additions should be tiny.
 
 ### Summary
 
