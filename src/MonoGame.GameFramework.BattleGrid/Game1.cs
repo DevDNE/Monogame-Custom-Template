@@ -9,9 +9,9 @@ using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Text;
 using MonoGame.GameFramework.UI;
-using MonoGame.GameFramework.Demo.GameStates;
+using MonoGame.GameFramework.BattleGrid.GameStates;
 
-namespace MonoGame.GameFramework.Demo;
+namespace MonoGame.GameFramework.BattleGrid;
 
 public class Game1 : Game
 {

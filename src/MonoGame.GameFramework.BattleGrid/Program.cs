@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using dotenv.net;
 using MonoGame.GameFramework.Core;
 
-namespace MonoGame.GameFramework.Demo;
+namespace MonoGame.GameFramework.BattleGrid;
 
 public class Program
 {

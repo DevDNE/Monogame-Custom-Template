@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{77620E86-1D9
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework", "src\MonoGame.GameFramework\MonoGame.GameFramework.csproj", "{2B901CA0-E421-4A9E-8A2F-7CBF91A58EC8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework.Demo", "src\MonoGame.GameFramework.Demo\MonoGame.GameFramework.Demo.csproj", "{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework.BattleGrid", "src\MonoGame.GameFramework.BattleGrid\MonoGame.GameFramework.BattleGrid.csproj", "{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework.Tests", "src\MonoGame.GameFramework.Tests\MonoGame.GameFramework.Tests.csproj", "{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}"
 EndProject

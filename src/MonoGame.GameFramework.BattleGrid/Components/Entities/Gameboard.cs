@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Rendering;
 
-namespace MonoGame.GameFramework.Demo.Components.Entities;
+namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 public class Gameboard : Entity
 {
   private SpriteSheet topTile;

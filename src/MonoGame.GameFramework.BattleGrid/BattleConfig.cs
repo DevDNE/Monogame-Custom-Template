@@ -1,4 +1,4 @@
-namespace MonoGame.GameFramework.Demo;
+namespace MonoGame.GameFramework.BattleGrid;
 
 internal static class BattleConfig
 {

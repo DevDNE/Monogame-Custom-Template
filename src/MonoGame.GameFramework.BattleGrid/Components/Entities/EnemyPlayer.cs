@@ -7,7 +7,7 @@ using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Text;
 
-namespace MonoGame.GameFramework.Demo.Components.Entities;
+namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
 public class EnemyPlayer : Entity
 {

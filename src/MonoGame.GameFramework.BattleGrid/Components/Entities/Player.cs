@@ -8,9 +8,9 @@ using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Rendering;
-using MonoGame.GameFramework.Demo.Components.UI;
+using MonoGame.GameFramework.BattleGrid.Components.UI;
 
-namespace MonoGame.GameFramework.Demo.Components.Entities;
+namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
 public class Player : Entity
 {

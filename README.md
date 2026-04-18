@@ -33,7 +33,7 @@ You need to make 2 files for the the 2 previous commands
 ```
 src/
   MonoGame.GameFramework/          ← Class library (reusable framework)
-  MonoGame.GameFramework.Demo/     ← Executable demo consuming the library
+  MonoGame.GameFramework.BattleGrid/     ← Executable demo consuming the library
 ```
 
 ### Library (`MonoGame.GameFramework`)
@@ -58,7 +58,7 @@ src/
 | `UI/` | `UIManager` (hit-testing, focus, click handlers) |
 | `Utilities/` | `MathUtilities` |
 
-### Demo (`MonoGame.GameFramework.Demo`)
+### Demo (`MonoGame.GameFramework.BattleGrid`)
 
 - `Program.cs` — entry point; loads dotenv, builds DI container, runs `Game1`.
 - `Game1.cs` — resolves managers from DI and orchestrates the MonoGame lifecycle.

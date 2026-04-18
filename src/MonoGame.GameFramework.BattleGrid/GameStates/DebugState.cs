@@ -6,9 +6,9 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
-using MonoGame.GameFramework.Demo.Components.UI;
+using MonoGame.GameFramework.BattleGrid.Components.UI;
 
-namespace MonoGame.GameFramework.Demo.GameStates;
+namespace MonoGame.GameFramework.BattleGrid.GameStates;
 public class DebugState : GameState
 {
   private ConsoleUI _consoleUI;

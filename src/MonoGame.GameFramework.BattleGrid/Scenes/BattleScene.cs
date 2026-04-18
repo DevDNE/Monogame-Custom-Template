@@ -6,9 +6,9 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
-using MonoGame.GameFramework.Demo.Components.Entities;
+using MonoGame.GameFramework.BattleGrid.Components.Entities;
 
-namespace MonoGame.GameFramework.Demo.Scenes;
+namespace MonoGame.GameFramework.BattleGrid.Scenes;
 public class BattleScene : GameScene
 {
   private Player _player;

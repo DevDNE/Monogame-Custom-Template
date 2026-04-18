@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with a demo project (`MonoGame.GameFramework.Demo`) that showcases the framework. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
+A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with a demo project (`MonoGame.GameFramework.BattleGrid`) that showcases the framework. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
 
 ## Solution Structure
 
@@ -12,20 +12,20 @@ A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with 
 Game.sln
 src/
   MonoGame.GameFramework/          ← Class library (reusable framework)
-  MonoGame.GameFramework.Demo/     ← Executable (demo game consuming the library)
+  MonoGame.GameFramework.BattleGrid/     ← Executable (demo game consuming the library)
 ```
 
 ## Build & Run
 
 ```bash
 dotnet build Game.sln                                                                    # Build both projects
-dotnet run --project src/MonoGame.GameFramework.Demo/MonoGame.GameFramework.Demo.csproj   # Run the demo
+dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj   # Run the demo
 dotnet restore                                                                           # Restore NuGet packages
 ```
 
-Content pipeline (sprites, fonts, sounds) is managed via `src/MonoGame.GameFramework.Demo/Content/Content.mgcb`. Edit with:
+Content pipeline (sprites, fonts, sounds) is managed via `src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb`. Edit with:
 ```bash
-dotnet mgcb-editor ./src/MonoGame.GameFramework.Demo/Content/Content.mgcb
+dotnet mgcb-editor ./src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb
 ```
 
 ## Tech Stack
@@ -82,9 +82,9 @@ The library is organized into 15 domain folders, each with a matching namespace.
 
 Rule of thumb: if you'd register it and mutate occasionally, use `TextManager`. If you'd recompute position every frame, use `DrawString`.
 
-### Demo (`MonoGame.GameFramework.Demo`)
+### Demo (`MonoGame.GameFramework.BattleGrid`)
 
-**Namespace root**: `MonoGame.GameFramework.Demo`
+**Namespace root**: `MonoGame.GameFramework.BattleGrid`
 
 **Entry point**: `Program.cs` loads dotenv, calls `AddGameFrameworkManagers()`, creates `Game1`.
 

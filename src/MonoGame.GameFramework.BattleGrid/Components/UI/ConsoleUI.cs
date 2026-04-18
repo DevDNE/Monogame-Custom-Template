@@ -6,7 +6,7 @@ using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Text;
 using MonoGame.GameFramework.UI;
 
-namespace MonoGame.GameFramework.Demo.Components.UI;
+namespace MonoGame.GameFramework.BattleGrid.Components.UI;
 public class ConsoleUI
 {
   private UIManager _uiManager;

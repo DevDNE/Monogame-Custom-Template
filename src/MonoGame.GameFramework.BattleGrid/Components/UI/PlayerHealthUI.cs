@@ -5,7 +5,7 @@ using MonoGame.GameFramework.UI;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoGame.GameFramework.Demo.Components.UI;
+namespace MonoGame.GameFramework.BattleGrid.Components.UI;
 public class PlayerHealthUI
 {
   private SpriteSheet _healthBar;

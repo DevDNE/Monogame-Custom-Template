@@ -1,4 +1,4 @@
-namespace MonoGame.GameFramework.Demo.Engine.Rules;
+namespace MonoGame.GameFramework.BattleGrid.Engine.Rules;
 public class GameRulesManager
 {
   private const int BoardWidth = 6;

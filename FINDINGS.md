@@ -6,7 +6,7 @@ Original snapshot: 2026-04-18. Updated 2026-04-18 — four non-deferred §6 item
 
 The framework has been exercised by two sample games in deliberately different genres:
 
-1. **`MonoGame.GameFramework.Demo`** — turn-based tactical grid battle (Fire Emblem-style).
+1. **`MonoGame.GameFramework.BattleGrid`** — turn-based tactical grid battle (Fire Emblem-style).
 2. **`MonoGame.GameFramework.Platformer`** — side-scrolling platformer with gravity, AABB collision, camera follow, a patrolling enemy, goal + win state, and a title screen.
 
 The point of building game #2 was to let real duplication (or real divergence) surface patterns worth promoting into the library or into a genre module, rather than guessing at abstractions up front. This doc captures what the two consumers revealed.

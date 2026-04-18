@@ -6,10 +6,10 @@ using System.Linq;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Persistence;
-using MonoGame.GameFramework.Demo.Components.Entities;
-using MonoGame.GameFramework.Demo.Scenes;
+using MonoGame.GameFramework.BattleGrid.Components.Entities;
+using MonoGame.GameFramework.BattleGrid.Scenes;
 
-namespace MonoGame.GameFramework.Demo.GameStates;
+namespace MonoGame.GameFramework.BattleGrid.GameStates;
 public class BattleState : GameState
 {
   private ServiceProvider _serviceProvider;
