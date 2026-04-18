@@ -70,7 +70,7 @@ _pixel.SetData(new[] { Color.White });
 
 **Recommendation**: `Rendering.Primitives` or similar — a lazy-initialized `PixelTexture` service keyed to the current `GraphicsDevice`, plus convenience `DrawRectangle`/`DrawLine` extension methods on `SpriteBatch`. Low effort, eliminates copy-paste.
 
-> **✅ Fixed 2026-04-18 (commit `702dd54`)**. `Rendering/Primitives.cs` provides static `Initialize(GraphicsDevice)` + `Pixel` + `DrawRectangle(spriteBatch, rect, color)`. Not yet adopted by the two sample games — each still creates its own 1×1 texture — so the helper awaits real-consumer validation. Likely low-risk adoption follow-up. No unit tests (GraphicsDevice isn't headless-friendly); smoke-tested via demo/platformer once they adopt it.
+> **✅ Fixed 2026-04-18 (commits `702dd54` + follow-up)**. `Rendering/Primitives.cs` provides static `Initialize(GraphicsDevice)` + `Pixel` + `DrawRectangle(spriteBatch, rect, color)`. Adopted in the follow-up commit by the platformer (`Game1`/`PlayState`/`TitleState`) and the demo's `ConsoleUI`. The demo adoption also cleaned up a dead `GraphicsDevice` parameter chain through `BattleState` → `DebugState` → `ConsoleUI`. No unit tests (GraphicsDevice isn't headless-friendly); smoke-tested via both sample games.
 
 ### 1.3 Screen-space vs world-space rendering
 Platformer has two draw contexts per frame: world (camera matrix) and UI (identity). The library provides `Camera2D.GetViewMatrix` but no guidance or helpers for mixed-context rendering. The tactical demo has one context because it uses no camera. Any future game with a camera will hit this.
@@ -192,7 +192,7 @@ Ordered by value-per-effort. None are urgent; pick when the trigger hits.
 6. ✅ **Document text rendering paths in CLAUDE.md** (§4.4). 10-minute edit. **Done 2026-04-18.**
 
 ### Follow-up trigger after the 2026-04-18 batch
-`Rendering.Primitives` is shipped but no consumer uses it yet — each game still creates its own 1×1 pixel texture. Low-risk follow-up: adopt `Primitives.Pixel` in the platformer's `Game1`/`PlayState`/`TitleState` and in the demo's `ConsoleUI`. Validates the helper and removes ~10 lines of duplicated init. Do when you next touch either game.
+~~`Rendering.Primitives` is shipped but no consumer uses it yet — each game still creates its own 1×1 pixel texture. Low-risk follow-up: adopt `Primitives.Pixel` in the platformer's `Game1`/`PlayState`/`TitleState` and in the demo's `ConsoleUI`.~~ **Done** — adopted in the follow-up commit. Demo's `BattleState`/`DebugState`/`ConsoleUI` also shed their now-dead `GraphicsDevice` parameter chain.
 
 Deferred — wait for a trigger:
 - Input rebinding layer (Tier 3 backlog; first user friction).

@@ -14,9 +14,9 @@ public class DebugState : GameState
   private ConsoleUI _consoleUI;
   private KeyboardManager _keyboardManager;
   private EventManager _eventManager;
-  public DebugState(GraphicsDevice graphicsDevice, ServiceProvider serviceProvider)
+  public DebugState(ServiceProvider serviceProvider)
   {
-    _consoleUI = new ConsoleUI(graphicsDevice, serviceProvider);
+    _consoleUI = new ConsoleUI(serviceProvider);
     _keyboardManager = serviceProvider.GetService<KeyboardManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
     _eventManager.Subscribe("EnemyHit", Log);

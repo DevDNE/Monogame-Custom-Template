@@ -12,7 +12,6 @@ using MonoGame.GameFramework.Demo.Scenes;
 namespace MonoGame.GameFramework.Demo.GameStates;
 public class BattleState : GameState
 {
-    private GraphicsDevice _graphicsDevice;
   private ServiceProvider _serviceProvider;
   private GameStateManager _gameStateManager;
   private SettingsManager _settingsManager;
@@ -20,9 +19,8 @@ public class BattleState : GameState
   private GameScene _battleScene;
   private DebugState debugState;
   private EventManager _eventManager;
-  public BattleState(GraphicsDevice graphicsDevice, ServiceProvider serviceProvider)
+  public BattleState(ServiceProvider serviceProvider)
   {
-    _graphicsDevice = graphicsDevice;
     _serviceProvider = serviceProvider;
     _sceneManager = serviceProvider.GetService<SceneManager>();
     _gameStateManager = _serviceProvider.GetService<GameStateManager>();
@@ -39,7 +37,7 @@ public class BattleState : GameState
 
     if (_settingsManager.DebugMode)
     {
-      debugState = new DebugState(_graphicsDevice, _serviceProvider);
+      debugState = new DebugState(_serviceProvider);
       _gameStateManager.PushState(debugState);
     }
   }

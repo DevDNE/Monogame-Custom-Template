@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Platformer.GameStates;
+using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.Platformer;
@@ -17,7 +18,6 @@ public class Game1 : Game
   private readonly ServiceProvider _serviceProvider;
   private readonly GraphicsDeviceManager _graphics;
   private SpriteBatch _spriteBatch;
-  private Texture2D _pixel;
   private SpriteFont _font;
   private KeyboardManager _keyboardManager;
   private MouseManager _mouseManager;
@@ -50,13 +50,12 @@ public class Game1 : Game
   protected override void LoadContent()
   {
     _spriteBatch = new SpriteBatch(GraphicsDevice);
-    _pixel = new Texture2D(GraphicsDevice, 1, 1);
-    _pixel.SetData(new[] { Color.White });
+    Primitives.Initialize(GraphicsDevice);
     _font = Content.Load<SpriteFont>("fonts/Arial");
 
-    PlayState playState = new(_serviceProvider, _pixel, _font, ViewportWidth, ViewportHeight);
+    PlayState playState = new(_serviceProvider, _font, ViewportWidth, ViewportHeight);
     TitleState titleState = new(
-      _serviceProvider, _pixel, _font, ViewportWidth, ViewportHeight,
+      _serviceProvider, _font, ViewportWidth, ViewportHeight,
       onPlay: () => _gameStateManager.ChangeState(playState),
       onQuit: Exit);
 

@@ -15,7 +15,6 @@ public class PlayState : GameState
   private const float DeathPlaneY = 800f;
 
   private readonly KeyboardManager _keyboardManager;
-  private readonly Texture2D _pixel;
   private readonly SpriteFont _font;
   private readonly int _viewportWidth;
   private readonly int _viewportHeight;
@@ -27,10 +26,9 @@ public class PlayState : GameState
   private Camera2D _camera;
   private bool _won;
 
-  public PlayState(ServiceProvider serviceProvider, Texture2D pixel, SpriteFont font, int viewportWidth, int viewportHeight)
+  public PlayState(ServiceProvider serviceProvider, SpriteFont font, int viewportWidth, int viewportHeight)
   {
     _keyboardManager = serviceProvider.GetService<KeyboardManager>();
-    _pixel = pixel;
     _font = font;
     _viewportWidth = viewportWidth;
     _viewportHeight = viewportHeight;
@@ -123,10 +121,10 @@ public class PlayState : GameState
   public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
   {
     spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
-    foreach (Platform p in _platforms) p.Draw(spriteBatch, _pixel);
-    foreach (Enemy e in _enemies) e.Draw(spriteBatch, _pixel);
-    _goal.Draw(spriteBatch, _pixel);
-    _player.Draw(spriteBatch, _pixel);
+    foreach (Platform p in _platforms) p.Draw(spriteBatch, Primitives.Pixel);
+    foreach (Enemy e in _enemies) e.Draw(spriteBatch, Primitives.Pixel);
+    _goal.Draw(spriteBatch, Primitives.Pixel);
+    _player.Draw(spriteBatch, Primitives.Pixel);
     spriteBatch.End();
 
     if (_won)
@@ -137,7 +135,7 @@ public class PlayState : GameState
       Vector2 size1 = _font.MeasureString(line1);
       Vector2 size2 = _font.MeasureString(line2);
       Vector2 center = new(_viewportWidth * 0.5f, _viewportHeight * 0.5f);
-      spriteBatch.Draw(_pixel, new Rectangle(0, 0, _viewportWidth, _viewportHeight), new Color(0, 0, 0, 140));
+      Primitives.DrawRectangle(spriteBatch, new Rectangle(0, 0, _viewportWidth, _viewportHeight), new Color(0, 0, 0, 140));
       spriteBatch.DrawString(_font, line1, new Vector2(center.X - size1.X * 0.5f, center.Y - size1.Y - 4), Color.White);
       spriteBatch.DrawString(_font, line2, new Vector2(center.X - size2.X * 0.5f, center.Y + 4), new Color(200, 200, 200));
       spriteBatch.End();

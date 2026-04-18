@@ -58,7 +58,8 @@ public class Game1 : Game
         _gamePadManager = _serviceProvider.GetService<GamePadManager>();
         _gameStateManager = _serviceProvider.GetService<GameStateManager>();
         _sceneManager = _serviceProvider.GetService<SceneManager>();
-        initialState = new BattleState(GraphicsDevice, _serviceProvider);
+        Primitives.Initialize(GraphicsDevice);
+        initialState = new BattleState(_serviceProvider);
         _gameStateManager.PushState(initialState);
         base.Initialize();
     }

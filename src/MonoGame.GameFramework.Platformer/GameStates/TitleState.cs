@@ -14,7 +14,6 @@ public class TitleState : GameState
   private const int ButtonHeight = 56;
 
   private readonly UIManager _uiManager;
-  private readonly Texture2D _pixel;
   private readonly SpriteFont _font;
   private readonly int _viewportWidth;
   private readonly int _viewportHeight;
@@ -26,7 +25,6 @@ public class TitleState : GameState
 
   public TitleState(
     ServiceProvider serviceProvider,
-    Texture2D pixel,
     SpriteFont font,
     int viewportWidth,
     int viewportHeight,
@@ -34,7 +32,6 @@ public class TitleState : GameState
     Action onQuit)
   {
     _uiManager = serviceProvider.GetService<UIManager>();
-    _pixel = pixel;
     _font = font;
     _viewportWidth = viewportWidth;
     _viewportHeight = viewportHeight;
@@ -49,11 +46,11 @@ public class TitleState : GameState
     int quitY = playY + ButtonHeight + 16;
 
     _playButton = SpriteSheet.Static(
-      _pixel,
+      Primitives.Pixel,
       new Rectangle(cx - ButtonWidth / 2, playY, ButtonWidth, ButtonHeight),
       name: "play");
     _quitButton = SpriteSheet.Static(
-      _pixel,
+      Primitives.Pixel,
       new Rectangle(cx - ButtonWidth / 2, quitY, ButtonWidth, ButtonHeight),
       name: "quit");
 
@@ -82,7 +79,7 @@ public class TitleState : GameState
   public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
   {
     spriteBatch.Begin();
-    spriteBatch.Draw(_pixel, new Rectangle(0, 0, _viewportWidth, _viewportHeight), new Color(20, 24, 40));
+    Primitives.DrawRectangle(spriteBatch, new Rectangle(0, 0, _viewportWidth, _viewportHeight), new Color(20, 24, 40));
 
     DrawButton(spriteBatch, _playButton, "Play");
     DrawButton(spriteBatch, _quitButton, "Quit");
@@ -104,7 +101,7 @@ public class TitleState : GameState
   {
     bool hovered = _uiManager.HoveredElement == button;
     Color bg = hovered ? new Color(95, 110, 150) : new Color(60, 72, 100);
-    spriteBatch.Draw(_pixel, button.DestinationFrame, bg);
+    Primitives.DrawRectangle(spriteBatch, button.DestinationFrame, bg);
 
     Vector2 size = _font.MeasureString(label);
     Vector2 pos = new(
