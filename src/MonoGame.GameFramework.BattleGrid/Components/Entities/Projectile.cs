@@ -26,7 +26,7 @@ public class Projectile : Entity
       new Rectangle((int)position.X, (int)position.Y, ProjectileWidth, ProjectileHeight),
       name: "Projectile");
     sprite.Tint = tint;
-    hurtbox = new Rectangle((int)position.X, (int)position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hurtbox = new Rectangle((int)position.X, (int)position.Y, ProjectileWidth, ProjectileHeight);
   }
 
   public override void LoadContent(ContentManager content) { }
@@ -44,7 +44,7 @@ public class Projectile : Entity
   {
     sprite.Position += velocity;
     sprite.DestinationFrame = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, ProjectileWidth, ProjectileHeight);
-    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, ProjectileWidth, ProjectileHeight);
   }
 
   public SpriteSheet GetSprite() => sprite;

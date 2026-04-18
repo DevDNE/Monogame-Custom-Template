@@ -11,8 +11,6 @@ internal static class BattleConfig
   public const int SourceHeight = 49;
   public const int DisplayWidth = 70;
   public const int DisplayHeight = 98;
-  public const int HitboxWidth = 38;
-  public const int HitboxHeight = 22;
   public const float CharacterFrameInterval = 0.1f;
 
   public const int ProjectileDamage = 10;

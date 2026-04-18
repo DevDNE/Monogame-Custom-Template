@@ -48,7 +48,7 @@ public class EnemyPlayer : Entity
       new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight),
       name: "Enemy");
     character.Tint = new Color(240, 100, 100);
-    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
     _drawManager.AddSprite(character);
   }
 
@@ -123,7 +123,7 @@ public class EnemyPlayer : Entity
     Vector2 pos = Grid.EnemyCellTopLeft(GridCol, GridRow);
     character.Position = pos;
     character.DestinationFrame = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
-    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
   }
 
   private void FirePattern(Pattern p)

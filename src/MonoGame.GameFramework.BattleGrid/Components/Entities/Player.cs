@@ -42,7 +42,7 @@ public class Player : Entity
       new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight),
       name: "Player");
     character.Tint = new Color(80, 180, 255);
-    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
     _drawManager.AddSprite(character);
   }
 
@@ -84,7 +84,7 @@ public class Player : Entity
     Vector2 pos = BattleGrid.Grid.PlayerCellTopLeft(GridCol, GridRow);
     character.Position = pos;
     character.DestinationFrame = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
-    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
   }
 
   public void Damage(int amount)
