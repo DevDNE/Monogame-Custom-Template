@@ -172,6 +172,8 @@ Puzzle hit this when a non-matching swap showed "No match — reverted" (the em-
 
 Both are worth doing; (1) has higher leverage. Worth flagging in CLAUDE.md regardless, as a "things that will bite you" note.
 
+> **✅ Fixed 2026-04-18 (post-AutoBattler)**. Rhythm's title screen hit the same class of bug with a second em-dash, which prompted executing Tier A item #1 from §8. All 9 games' `Content/fonts/Arial.spritefont` now declare five `CharacterRegion` blocks covering U+0020..U+007E (ASCII), U+00A0..U+00FF (Latin-1 Supplement), U+2013..U+2014 (en/em-dash), U+2018..U+201D (curly quotes), U+2026 (ellipsis), and U+2022 (bullet). Rhythm's "4-lane rhythm — hit notes..." and AutoBattler's "Round {n} — COMBAT" text now render correctly without string edits. Cross-build smoke-tested clean on all 9 sample games.
+
 ### 1.8 `Camera2D.ScreenToWorld` is ergonomic for mouse-aim (NEW 2026-04-18c)
 Shooter's aim direction needed three lines end-to-end:
 ```csharp
@@ -438,7 +440,7 @@ The following primitives moved off the speculative list over the course of the 9
 
 Small, backward-compatible, concrete evidence. Build them before the next game or the first real project.
 
-1. **Widen default spritefont charset** (§1.10). Update the sample-game template and all nine existing games' `Content/fonts/Arial.spritefont` to cover U+0020..U+00FF + common typographic punctuation. Prevents the em-dash crash class. **~5 lines XML per game, plus template.**
+1. ✅ **Widen default spritefont charset** (§1.10) — **Done post-AutoBattler.** All 9 spritefonts now cover ASCII + Latin-1 Supplement + common typographic punctuation. Em-dash/curly quotes/accented letters render without crashing.
 2. **Rename `Tween` namespace or class to fix the collision** (§1.14). The `using MonoGame.GameFramework.Tween;` / `Tween.Float(...)` conflict forced an ugly `TweenOf` alias in both VN's `PlayState` and the test project. Rename the namespace to `MonoGame.GameFramework.Tweening` (keeps the static class called `Tween`, which reads best). ~6 files touched.
 3. **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). 3-line helper; Puzzle wanted it.
 4. **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** returning `bool` (§1.9). Bounds-clamping variant; Puzzle/TD/AutoBattler all added bounds-checks themselves.
