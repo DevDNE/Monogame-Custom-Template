@@ -1,12 +1,12 @@
 # Findings — Library Review from Building Two Sample Games
 
-Original snapshot: 2026-04-18. Updated 2026-04-18 — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Items deferred to game #3 remain open.
+Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. New findings recorded inline and in §7.
 
 ## Context
 
 The framework has been exercised by two sample games in deliberately different genres:
 
-1. **`MonoGame.GameFramework.BattleGrid`** — turn-based tactical grid battle (Fire Emblem-style).
+1. **`MonoGame.GameFramework.BattleGrid`** — real-time grid duel inspired by Mega Man Battle Network. 3×3 grid per side, WASD movement, space-bar buster, Tab-triggered chip selection from a pool of four (Cannon / Wide Shot / Sword / Recov), enemy AI alternating between movement and two attack patterns, HP bars + controls hint HUD. (Originally a tactical-grid stub before the 2026-04-18b expansion.)
 2. **`MonoGame.GameFramework.Platformer`** — side-scrolling platformer with gravity, AABB collision, camera follow, a patrolling enemy, goal + win state, and a title screen.
 
 The point of building game #2 was to let real duplication (or real divergence) surface patterns worth promoting into the library or into a genre module, rather than guessing at abstractions up front. This doc captures what the two consumers revealed.
@@ -17,14 +17,15 @@ The point of building game #2 was to let real duplication (or real divergence) s
 
 **Validated by both games:**
 - `Input.KeyboardManager`, `Input.MouseManager`
-- `Rendering.SpriteSheet` (factory methods — `Static`, `Animated`)
-- `Rendering.DrawManager` (tactical uses heavily; platformer only via `UIManager` coupling)
-- `Lifecycle.GameState` + `Lifecycle.GameStateManager`
-- `UI.UIManager` (tactical: group Add/Remove only; platformer: hit-testing + `OnClick` + `HoveredElement`)
-- `Core.Entity` pattern (tactical) / equivalent POCOs (platformer — see friction below)
+- `Rendering.SpriteSheet` factory methods (`Static`), `SpriteSheet.Tint`
+- `Rendering.Primitives` (`Initialize` + `Pixel` + `DrawRectangle`) — now the universal pattern for colored rectangles in both samples
+- `Rendering.DrawManager`
+- `Lifecycle.GameState` + `Lifecycle.GameStateManager` (auto-lifecycle calls from the 2026-04-18 fix)
+- `UI.UIManager` (BattleGrid & platformer both use hit-testing + `OnClick` + `HoveredElement` for title buttons; BattleGrid also uses `AddUIElement` without drawing for the console overlay)
+- `Core.Entity` pattern (BattleGrid subclasses it for all its entities; platformer uses plain POCOs — the abstract class still doesn't earn its keep, see §4.3)
 
 **Validated by one game:**
-- Tactical: `Events.EventManager` (string API), `Lifecycle.SceneManager`, `Persistence.SettingsManager`, `Text.TextManager`, `Input.GamePadManager`
+- BattleGrid: `Events.EventManager` (string API), `Lifecycle.SceneManager`, `Persistence.SettingsManager`, `Text.TextManager` (only the tilde-console log; HP moved to the HUD), `Input.GamePadManager`, `SpriteSheet.Animated` no longer needed — all static rects
 - Platformer: `Rendering.Camera2D` (follow, view matrix, snap-on-respawn)
 
 **Not used by either game (speculative):**
@@ -80,6 +81,13 @@ Platformer has two draw contexts per frame: world (camera matrix) and UI (identi
 ### 1.4 Input remapping is absent and both games pretend it's fine
 Both games hardcode WASD/Arrows/Space. Any serious consumer will want rebinding. This is already on the Tier 3 backlog.
 
+### 1.5 `GameState.IsActive` conflates "updating" and "visible" (NEW 2026-04-18b)
+`GameStateManager.Update` and `GameStateManager.Draw` both skip states where `IsActive == false`. That collapses two concerns into one flag. The intended pattern — "when a state is obscured by another, stop updating it but keep drawing it behind the overlay" — isn't expressible with the current API.
+
+BattleGrid hit this when adding the chip-selection overlay. Pushing a `ChipSelectState` onto `PlayState` would have stopped `PlayState` from drawing too, hiding the battle behind the overlay. Workaround: `PlayState.Obscuring` is now a no-op (doesn't set `IsActive = false`), and chip selection is handled as an internal `Mode` enum rather than a separate pushed state. Works, but it pushes state-machine logic into the consumer that the library's state stack was supposed to handle.
+
+**Recommendation**: split `IsActive` into `IsUpdating` and `IsVisible` (or similar). `PushState` sets the old top's `IsUpdating = false` but leaves `IsVisible = true`. That lets overlay-style states work as intended. Medium change; update the library tests accordingly.
+
 ---
 
 ## §2 — Platformer-specific patterns (genre-module candidates)
@@ -113,13 +121,17 @@ The `Enemy` class bounces between two x-coordinates at constant speed. Appears i
 
 ---
 
-## §3 — Tactical-specific patterns (for a hypothetical `TurnBased` module)
+## §3 — BattleGrid-specific patterns (for a hypothetical `GridDuel` module)
 
-Not extracting yet (only one consumer — the demo), but noting for the next strategy-style game:
-- Grid movement (snap to tile centers).
-- Board / tile entity that owns occupancy state.
-- Projectile fire-and-forget with collision-vs-target.
-- Turn ordering (currently absent but implied).
+BattleGrid is no longer turn-based — it's real-time with a chip-selection pause. Patterns that would recur in any grid-duel style game:
+
+- Grid-to-pixel coordinate helpers (`Grid.PlayerCellTopLeft`, `Grid.EnemyCellCenter`, `Grid.RowCenterY`). Two-sided 3×N grids are common in this genre. Could become `Rendering.TwoSidedGrid` or similar.
+- Action-tick AI: simple state machine ticking at a fixed interval, alternating categories of actions (move / attack, or similar). A couple of lines of code but repeated in every enemy in this genre.
+- Chip / card / ability selection overlay: pauses gameplay, offers 2–4 random options from a pool, commits on pick, then cooldown. The "inline Mode enum instead of separate state" workaround from §1.5 is really this pattern.
+- Row-based projectile collision: projectile + entity collision is really "do they share a row at a given X overlap?" — row is the dominant axis. A `Rendering.RowGrid` helper that precomputes row bounds would simplify collision checks in dense patterns.
+- HP bar + cooldown-indicator HUD: BattleGrid's hand-rolled bars via `Primitives.DrawRectangle` would repeat in every game with 1–2 combatants. A small `HUD.HpBar(rect, current, max, fill)` helper would eat this.
+
+Not extracting yet (only one consumer), but the density of these patterns is higher than the platformer's — a second grid-duel game would turn most of them into library code quickly.
 
 ---
 
@@ -143,10 +155,12 @@ Things that work but awkwardly. Each is a candidate for a small library fix; gro
 
 > **✅ Fixed 2026-04-18 (commit `702dd54`)**. `SpriteSheet.Tint` is a mutable `Color` property defaulting to `Color.White`; `DrawManager.Draw` uses `sprite.Tint` instead of hardcoded white. Consumers can now tint, flash, or fade sprites at runtime without replacing them. Covered by 2 new `SpriteSheetTests`.
 
-### 4.3 `Entity` abstract class is unused in the platformer
-Platformer's `Player`/`Platform`/`Enemy`/`Goal` are plain classes, not `Entity` subclasses. Nothing in the library forces `Entity`. Using it would be ceremony: each entity takes a ContentManager in `LoadContent` (unused), an empty `UnloadContent`, and a `SpriteBatch` in `Draw` (already receiving). The tactical demo does extend `Entity` but also doesn't get much from it — the abstract methods mostly no-op.
+### 4.3 `Entity` abstract class is unused in the platformer and adds no value in BattleGrid
+Platformer's `Player`/`Platform`/`Enemy`/`Goal` are plain classes, not `Entity` subclasses. BattleGrid's `Player`/`EnemyPlayer`/`Projectile`/`Gameboard` *do* subclass `Entity`, but they only inherit the method signatures (`LoadContent`/`UnloadContent`/`Update`/virtual `Draw`) — most entities pass `ContentManager` through to do nothing, and their `Draw` is empty because rendering is via `DrawManager`.
 
-**Recommendation**: consider making `Entity` genuinely useful (e.g., own a `Position`, `Bounds`, or a `Draw`/`Update` lifecycle that a scene iterates) or delete it. Right now it's a naming convention with method signatures that don't earn their keep. Revisit once a third game tells us what entities actually share.
+The abstract class is not forcing any real shape. Each game could delete it and work fine.
+
+**Recommendation**: consider making `Entity` genuinely useful (e.g., own a `Position`, `Bounds`, or a `Draw`/`Update` lifecycle that a scene iterates and disposes) or delete it. Right now it's a naming convention with method signatures that don't earn their keep. Revisit once a third game tells us what entities actually share — two games haven't produced signal.
 
 ### 4.4 `Text` rendering has two disconnected paths
 Tactical uses `Text.TextManager` (handle-based, batched). Platformer uses `SpriteBatch.DrawString` directly with a cached `SpriteFont`. Both work; neither dominates. `TextManager` is the right choice for HUD-like text that persists across frames; direct `DrawString` is right for one-off overlays ("You Win"). The library doesn't document which to pick.
@@ -163,20 +177,18 @@ Some library code was written speculatively and hasn't earned its place yet. Not
 
 | Primitive | Status | Likely trigger |
 |---|---|---|
-| `ObjectPool<T>` | Unused | A game with many short-lived objects (projectiles at scale, particles) |
-| `Timer` / `TimerManager` | Unused | A game with many scheduled callbacks (turn timers, power-up durations). Platformer's coyote/buffer used plain float counters because `TimerManager`'s `After`/`Every` fit poorly for continuously-ticking grace windows |
-| `Tween<T>` / `Easing` | Unused | Any UI or camera polish pass |
+| `ObjectPool<T>` | Unused | A game with many short-lived objects. BattleGrid allocates a new `Projectile` per shot; wide shots + rapid fire fire multiple per frame. Still not painful enough to pool, but the first "many projectiles" game will hit this. |
+| `Timer` / `TimerManager` | Unused | BattleGrid uses plain `float` counters for `_actionTimer`, `_shootTimer`, `_chipCooldown`, `_swordFlashRemaining`. That's 4 timers hand-rolled in one file — a data point that `TimerManager`'s `After`/`Every` shape doesn't match continuously-ticking grace windows well. The library's `Timer` should probably grow a simpler "tick me every frame and fire callback when elapsed" form. |
+| `Tween<T>` / `Easing` | Unused | BattleGrid's sword-flash alpha fade would be a natural customer (currently a binary on/off). Any UI polish pass would use this. |
 | `SaveSystem` / `SaveFile` | Unused | First persistent progress |
-| `TileMap` / `TileLayer` | Unused | Platformer hand-rolled `List<Platform>`; tactical hand-rolled a grid. Both would benefit but neither needed it for MVP |
-| `AssetCatalog` | Unused | Any game with ≥ 10 content entries |
-| `ILogger` / `ConsoleLogger` | Unused | First debugging session painful enough to add logging |
-| `MathUtilities` | Unused | Randomness, angle math — both games got away without it |
+| `TileMap` / `TileLayer` | Unused | BattleGrid hand-rolls a 3×3×2 grid via two `SpriteSheet[,]` arrays plus `Grid.cs` helpers. Platformer hand-rolls a `List<Platform>`. Both would fit `TileMap`/`TileLayer` almost perfectly — the only reason neither uses it is inertia. |
+| `AssetCatalog` | Unused | Any game with ≥ 10 content entries. Both samples are down to one asset each (the font). |
+| `ILogger` / `ConsoleLogger` | Unused | First debugging session painful enough to add logging. `ConsoleUI` partially fills this role in BattleGrid but doesn't use the library's logger. |
+| `MathUtilities` | Unused | Randomness, angle math — both games got away without it. BattleGrid uses `System.Random` directly. |
 | `PerformanceMonitor` | Unused | First perf complaint |
-| `EventManager.Subscribe<T>`/`Publish<T>` (typed) | Unused | Any game that grows past ~5 event types |
+| `EventManager.Subscribe<T>`/`Publish<T>` (typed) | Unused | Any game that grows past ~5 event types. BattleGrid's event set (PlayerMoved/PlayerHit/EnemyHit/FiredProjectile) stayed small enough that the string API is still fine. |
 
-Of these, the ones most likely to land soon given the platformer's trajectory: `ObjectPool` (if projectiles return), `Tween` (UI polish), `AssetCatalog` (more than one sprite sheet), `TileMap` (bigger levels).
-
-The ones I'd flag as genuinely speculative until 3 games exist: `PerformanceMonitor` (untested beyond a property exposing what it already computed), `MathUtilities.Random*` (`System.Random` is fine), typed `EventManager` API (string API handles both games' ~5 events each).
+After two full games, the unused surface is *the same 10 primitives* as before. That's a strong signal: the library has ~30% speculative code that two genre-diverse games didn't need. Not a call to delete — several are the kind of utility that lands in game 3 or 4 and pays for itself then — but an honest data point. Most aggressive candidates to remove if a third game still doesn't use them: `PerformanceMonitor`, typed `EventManager` API, `MathUtilities.Random*`.
 
 ---
 
@@ -184,15 +196,18 @@ The ones I'd flag as genuinely speculative until 3 games exist: `PerformanceMoni
 
 Ordered by value-per-effort. None are urgent; pick when the trigger hits.
 
-1. ✅ **Fix `GameStateManager` lifecycle auto-calls** (§1.1). ~20 lines. Removes ceremony from every game. ~~Do next time the library is touched.~~ **Done 2026-04-18.**
-2. ✅ **Decouple `UIManager` from `DrawManager`** (§4.1). Split into interaction-only + optional rendering helper. ~40 lines. ~~Do before game #3 if it has UI.~~ **Done 2026-04-18.**
-3. ✅ **Ship the pixel-texture helper + `SpriteSheet.Tint`** (§1.2, §4.2). ~20 lines. Trivial quality-of-life win. **Done 2026-04-18** — `Primitives` awaits adoption by sample games.
-4. ⏳ **Start a `MonoGame.GameFramework.Platformer` genre module** once a *second* platformer is started (§2). Extract the jump feel config + controller first — that's the densest shared code. **Deferred to game #3.**
-5. ⏳ **Delete or redesign `Entity` abstract class** (§4.3). Revisit after game #3. **Deferred to game #3.**
-6. ✅ **Document text rendering paths in CLAUDE.md** (§4.4). 10-minute edit. **Done 2026-04-18.**
+1. ✅ **Fix `GameStateManager` lifecycle auto-calls** (§1.1). **Done 2026-04-18.**
+2. ✅ **Decouple `UIManager` from `DrawManager`** (§4.1). **Done 2026-04-18.**
+3. ✅ **Ship the pixel-texture helper + `SpriteSheet.Tint`** (§1.2, §4.2). **Done 2026-04-18.** Adopted by both samples in the follow-up commit.
+4. ⏳ **Start a `MonoGame.GameFramework.Platformer` genre module** once a *second* platformer is started (§2). **Still deferred.** After BattleGrid shipped, it's now clearer that platformer + grid-duel share *nothing* — extraction is still sample-of-one.
+5. ⏳ **Delete or redesign `Entity` abstract class** (§4.3). **Still deferred.** BattleGrid uses `Entity` but gains nothing from it; verdict unchanged — wait for game #3.
+6. ✅ **Document text rendering paths in CLAUDE.md** (§4.4). **Done 2026-04-18.**
 
-### Follow-up trigger after the 2026-04-18 batch
-~~`Rendering.Primitives` is shipped but no consumer uses it yet — each game still creates its own 1×1 pixel texture. Low-risk follow-up: adopt `Primitives.Pixel` in the platformer's `Game1`/`PlayState`/`TitleState` and in the demo's `ConsoleUI`.~~ **Done** — adopted in the follow-up commit. Demo's `BattleState`/`DebugState`/`ConsoleUI` also shed their now-dead `GraphicsDevice` parameter chain.
+### New from 2026-04-18b
+
+7. ⏳ **Split `GameState.IsActive` into `IsUpdating` and `IsVisible`** (§1.5, new). BattleGrid's chip-selection overlay couldn't be implemented as a pushed state because `IsActive = false` would also stop the background battle from drawing. It lives as an inline `Mode` enum instead. A proper overlay API is likely the single most impactful library change if a third game has any pause/menu overlay. **Medium effort, high leverage.**
+8. ⏳ **Simpler per-frame `Timer` shape** (§5). `TimerManager.After`/`Every` don't fit the pattern that most games actually hit: "decrement each frame and check if elapsed". Four hand-rolled float counters in BattleGrid confirm this. A `Timer.Tick(dt)` returning a bool would eliminate that duplication.
+9. ⏳ **Migrate BattleGrid and Platformer to `TileMap`/`TileLayer`** (§5). Both games hand-roll what the library already provides; the adoption would validate the library primitives and remove local code. Pure win when next touching either game.
 
 Deferred — wait for a trigger:
 - Input rebinding layer (Tier 3 backlog; first user friction).
@@ -210,3 +225,11 @@ Deferred — wait for a trigger:
 - **Over-build is visible now**. §5 lists 10+ primitives not used by either game. Some are fine ("will land soon"), some are speculative ("built because it seemed generally useful"). Honest accounting prevents the library from growing into a dumping ground.
 - **The library passed the "second consumer" test.** The platformer was built in ~9 small phases without blocking changes to the library (aside from discoveries logged here). That's the main signal that the core abstractions are OK.
 - **The findings loop works.** Four of the six §6 items were fixed in a single bundled follow-up commit (`702dd54`) with test coverage for each. The two deferred items (genre module, `Entity` redesign) are explicitly sample-of-one extractions that only game #3 can honestly validate — deferring them was correct, not procrastination.
+
+### Updated after BattleGrid's buildout (2026-04-18b)
+
+- **Genre-module extraction still has no signal, and the reason is stronger now.** Platformer and BattleGrid don't just have different mechanics — they have *different shapes of problem*. Platformer's core is continuous physics + camera; BattleGrid's core is discrete grid movement + discrete attack scheduling. The two share nothing at the gameplay layer. The only overlap is plumbing that already lives in the library (states, input, rendering, font).
+- **The library's state-stack API doesn't handle pause-overlays.** §1.5 is the single biggest new friction. Most games that grow beyond a single play screen will hit it.
+- **`Rendering.Primitives` was the right addition.** Both samples now use it ubiquitously; neither had to re-invent a 1×1 pixel texture. Low-effort library win validated by real use.
+- **Rectangle-based entity rendering revealed a hitbox-anchor class of bug.** When Phase 5 moved the projectile spawn to the character's vertical center but left the hitbox as a 38×22 sub-region anchored top-left, collisions silently stopped working. Lesson for any `Entity` redesign: if a `Bounds` concept lands on the base class, it should default to the full visual rect — sub-hitboxes are a per-game opt-in with real risk of this exact desync.
+- **Hand-rolled patterns in BattleGrid point to small, targeted library additions** (§3). A `TwoSidedGrid`, a simpler `Timer.Tick`, a `HUD.HpBar` — each would pay for itself in a second game of the same genre. None big enough to justify speculative build.

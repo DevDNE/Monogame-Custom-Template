@@ -4,26 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with a demo project (`MonoGame.GameFramework.BattleGrid`) that showcases the framework. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
+A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with two sample games in different genres (`MonoGame.GameFramework.BattleGrid` — grid-duel; `MonoGame.GameFramework.Platformer` — side-scroller) that showcase it. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
 
 ## Solution Structure
 
 ```
 Game.sln
 src/
-  MonoGame.GameFramework/          ← Class library (reusable framework)
-  MonoGame.GameFramework.BattleGrid/     ← Executable (demo game consuming the library)
+  MonoGame.GameFramework/             ← Class library (reusable framework)
+  MonoGame.GameFramework.BattleGrid/  ← Sample game: grid-based duel
+  MonoGame.GameFramework.Platformer/  ← Sample game: side-scroller
+  MonoGame.GameFramework.Tests/       ← xUnit tests for the library
 ```
 
 ## Build & Run
 
 ```bash
-dotnet build Game.sln                                                                    # Build both projects
-dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj   # Run the demo
-dotnet restore                                                                           # Restore NuGet packages
+dotnet build Game.sln                                                                              # Build all projects
+dotnet test  Game.sln                                                                              # Run the 99 library tests
+dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj   # Run the grid-duel sample
+dotnet run --project src/MonoGame.GameFramework.Platformer/MonoGame.GameFramework.Platformer.csproj   # Run the platformer sample
+dotnet restore                                                                                     # Restore NuGet packages
 ```
 
-Content pipeline (sprites, fonts, sounds) is managed via `src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb`. Edit with:
+Each sample game has its own `Content/Content.mgcb`. Both currently reference only a single font (`fonts/Arial.spritefont`) — all entities render as colored rectangles via `Rendering.Primitives`, so no sprite atlases are needed. Edit a content file with:
 ```bash
 dotnet mgcb-editor ./src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb
 ```
@@ -82,20 +86,39 @@ The library is organized into 15 domain folders, each with a matching namespace.
 
 Rule of thumb: if you'd register it and mutate occasionally, use `TextManager`. If you'd recompute position every frame, use `DrawString`.
 
-### Demo (`MonoGame.GameFramework.BattleGrid`)
+### Sample games
 
-**Namespace root**: `MonoGame.GameFramework.BattleGrid`
+Two sample games live in `src/` next to the library. Both are playable end-to-end and exist to validate the library against different genres.
 
-**Entry point**: `Program.cs` loads dotenv, calls `AddGameFrameworkManagers()`, creates `Game1`.
+#### `MonoGame.GameFramework.BattleGrid`
+Grid-based duel inspired by Mega Man Battle Network. 3×3 grid per side, player on the left (blue), enemy on the right (red), all drawn as colored rectangles via `Rendering.Primitives`.
 
-**Game1** resolves managers from DI, runs the standard MonoGame lifecycle. `Game1.Update` order: input managers → `UIManager.Update` → `GameStateManager.Update`. `Game1.Draw` order: `DrawManager.Draw` (registered sprites) → `GameStateManager.Draw` (state/scene/entity custom draw) → `TextManager.Draw`.
+- **Controls**: WASD to move on the player grid; Space to fire a buster shot; Tab to open chip selection; number keys `1`/`2`/`3` pick a chip; R restarts; Esc quits.
+- **Enemy AI**: `EnemyPlayer.Update` alternates every 1.5 s between moving to a random cell and firing one of two rotating patterns (single-row shot vs. wide shot across all rows).
+- **Chip system**: `PlayState` holds a `Mode` enum (`Playing`/`SelectingChip`/`Won`/`Lost`). Tab switches to `SelectingChip`, which pauses the scene update but keeps drawing the world behind an overlay. Four chips in the pool: Cannon (40 dmg), Wide Shot (15×3), Sword (30 same-row), Recov (heal 30). 3 s cooldown after use.
+- **HUD**: `PlayState.DrawHud` renders HP bars with numeric labels, a controls hint strip at the bottom, and a chip-ready / cooldown indicator at top center.
+- **File layout**:
+  - `Game1.cs` — thin shell; resolves managers, initializes `Primitives`, pushes `TitleState`.
+  - `BattleConfig.cs` — grid constants (tile size, board origins, default projectile damage).
+  - `Grid.cs` — static (col, row) → pixel coordinate helpers.
+  - `GameStates/` — `TitleState`, `PlayState`, `DebugState` (tilde-toggled console overlay).
+  - `Scenes/BattleScene.cs` — owns `Player`, `EnemyPlayer`, `Gameboard`.
+  - `Components/Entities/` — `Player`, `EnemyPlayer`, `Projectile`, `Gameboard`.
+  - `Components/UI/ConsoleUI.cs` — debug log overlay.
+  - `Engine/Rules/GameRulesManager.cs` — grid boundary validation helpers.
 
-**Game-specific code**:
-- `Components/Entities/` — `Player`, `EnemyPlayer`, `Projectile`, `Gameboard`
-- `Components/UI/` — `ConsoleUI`, `PlayerHealthUI`
-- `GameStates/` — `BattleState`, `DebugState`
-- `Scenes/` — `BattleScene`
-- `Engine/Rules/` — `GameRulesManager`
+#### `MonoGame.GameFramework.Platformer`
+Side-scrolling platformer. Colored-rectangle player, platforms, patrolling enemy, green goal.
+
+- **Controls**: A/D or arrow keys to move; Space to jump (hold for higher jump); R to respawn; Esc to quit.
+- **Physics**: gravity + horizontal acceleration in `Player.Update`; separate-axis AABB resolution against a `List<Platform>`. Coyote time 150 ms, jump buffer 150 ms, variable-height jump via `JumpCutVelocity`.
+- **Camera**: `Rendering.Camera2D` with `Target` follow and lerp; `PlayState.Respawn` snaps the camera to the player to avoid a long pan.
+- **Win/Lose**: death plane at y=800 triggers respawn; touching the green goal enters `_won` state with "Press R to play again" overlay.
+- **File layout**:
+  - `Game1.cs` — thin shell; `Primitives.Initialize`; pushes `TitleState`.
+  - `GameStates/` — `TitleState`, `PlayState`.
+  - `Entities/` — `Player`, `Platform`, `Enemy`, `Goal`.
+  - `Content/fonts/Arial.spritefont`.
 
 ## Mac Setup Notes
 

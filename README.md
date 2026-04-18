@@ -32,8 +32,10 @@ You need to make 2 files for the the 2 previous commands
 
 ```
 src/
-  MonoGame.GameFramework/          ← Class library (reusable framework)
-  MonoGame.GameFramework.BattleGrid/     ← Executable demo consuming the library
+  MonoGame.GameFramework/             ← Class library (reusable framework)
+  MonoGame.GameFramework.BattleGrid/  ← Sample game: grid-based duel
+  MonoGame.GameFramework.Platformer/  ← Sample game: side-scroller
+  MonoGame.GameFramework.Tests/       ← xUnit tests for the library
 ```
 
 ### Library (`MonoGame.GameFramework`)
@@ -51,19 +53,21 @@ src/
 | `Lifecycle/` | `GameState` + `GameStateManager`, `GameScene` + `SceneManager` |
 | `Persistence/` | `SaveSystem`, `SaveFile<T>`, `SettingsManager` |
 | `Pooling/` | `ObjectPool<T>` |
-| `Rendering/` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>` |
+| `Rendering/` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives` |
 | `Text/` | `TextManager` (handle-based), `TextElement`, `TextHandle` |
 | `Timing/` | `Timer`, `TimerManager` (`After`/`Every`/`Over`) |
 | `Tween/` | `Tween<T>`, `Easing` |
 | `UI/` | `UIManager` (hit-testing, focus, click handlers) |
 | `Utilities/` | `MathUtilities` |
 
-### Demo (`MonoGame.GameFramework.BattleGrid`)
+### Sample: `MonoGame.GameFramework.BattleGrid`
 
-- `Program.cs` — entry point; loads dotenv, builds DI container, runs `Game1`.
-- `Game1.cs` — resolves managers from DI and orchestrates the MonoGame lifecycle.
-- `Components/Entities/` — `Player`, `EnemyPlayer`, `Projectile`, `Gameboard`.
-- `Components/UI/` — `ConsoleUI`, `PlayerHealthUI`.
-- `GameStates/` — `BattleState`, `DebugState`.
-- `Scenes/` — `BattleScene`.
-- `Engine/Rules/` — `GameRulesManager`.
+Grid-based duel inspired by Mega Man Battle Network. Player (blue, left 3×3) vs. enemy (red, right 3×3), all colored rectangles. WASD to move, Space to shoot, Tab opens a chip-selection overlay with three random chips from a pool (Cannon / Wide Shot / Sword / Recov), R restarts, Esc quits. Enemy AI alternates between movement and one of two attack patterns (single-row or wide-across-all-rows). HP bars, controls hint, and chip-ready indicator are drawn as HUD. Tilde toggles a debug console overlay.
+
+### Sample: `MonoGame.GameFramework.Platformer`
+
+Side-scrolling platformer. Colored-rectangle player with gravity, variable-height jump, coyote time, and jump buffer. Separate-axis AABB collision against a list of platforms. Patrolling red enemy, green goal, death plane. Camera follows the player with lerp and snaps on respawn. Title screen with Play/Quit buttons; win overlay on touching the goal. A/D or arrows to move, Space to jump, R to respawn, Esc to quit.
+
+### Tests (`MonoGame.GameFramework.Tests`)
+
+99 xUnit tests with FluentAssertions covering pure-logic library pieces: `ObjectPool`, `Timer`/`TimerManager`, `Tween`/`Easing`, `MathUtilities`, `TileMap`/`TileLayer`, `EventManager` (string + typed), `SaveSystem`, `Camera2D` math, `GameStateManager` lifecycle, `UIManager` independence, `SpriteSheet.Tint`. Rendering-dependent code (SpriteBatch/SpriteFont/GraphicsDevice) is smoke-tested via the two sample games rather than unit tests.
