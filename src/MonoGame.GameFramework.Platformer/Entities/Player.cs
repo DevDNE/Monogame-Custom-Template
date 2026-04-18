@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -5,6 +6,10 @@ namespace MonoGame.GameFramework.Platformer.Entities;
 
 public class Player
 {
+  public const float MoveSpeed = 280f;
+  public const float GroundAcceleration = 1800f;
+  public const float AirAcceleration = 1200f;
+  public const float JumpVelocity = -700f;
   public const float Gravity = 1800f;
   public const float MaxFallSpeed = 900f;
   public const int Width = 32;
@@ -31,12 +36,21 @@ public class Player
     IsGrounded = false;
   }
 
-  public void Update(GameTime gameTime, Platform ground)
+  public void Update(GameTime gameTime, Platform ground, float inputX, bool jumpPressed)
   {
     float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-    float vy = MathHelper.Clamp(Velocity.Y + Gravity * dt, -MaxFallSpeed, MaxFallSpeed);
-    Velocity = new Vector2(Velocity.X, vy);
+    float targetVx = inputX * MoveSpeed;
+    float accel = IsGrounded ? GroundAcceleration : AirAcceleration;
+    float dx = targetVx - Velocity.X;
+    float step = accel * dt;
+    float newVx = MathF.Abs(dx) <= step ? targetVx : Velocity.X + MathF.Sign(dx) * step;
+
+    float newVy = Velocity.Y + Gravity * dt;
+    if (jumpPressed && IsGrounded) newVy = JumpVelocity;
+    newVy = MathHelper.Clamp(newVy, -MaxFallSpeed, MaxFallSpeed);
+
+    Velocity = new Vector2(newVx, newVy);
     Position += Velocity * dt;
 
     IsGrounded = false;

@@ -53,7 +53,12 @@ public class Game1 : Game
     if (_keyboardManager.IsKeyDown(Keys.Escape)) Exit();
     if (_keyboardManager.WasKeyPressed(Keys.R)) _player.Respawn();
 
-    _player.Update(gameTime, _ground);
+    float inputX = 0f;
+    if (_keyboardManager.IsKeyDown(Keys.A) || _keyboardManager.IsKeyDown(Keys.Left)) inputX -= 1f;
+    if (_keyboardManager.IsKeyDown(Keys.D) || _keyboardManager.IsKeyDown(Keys.Right)) inputX += 1f;
+    bool jumpPressed = _keyboardManager.WasKeyPressed(Keys.Space);
+
+    _player.Update(gameTime, _ground, inputX, jumpPressed);
     base.Update(gameTime);
   }
 
