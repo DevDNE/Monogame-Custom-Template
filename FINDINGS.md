@@ -358,3 +358,94 @@ Deferred — wait for a trigger:
 - **Procgen lives per-game (§1.12).** The `TileLayer<T>` API is the right stopping point; generators shouldn't live in the library.
 - **Scrolling text logs are a third repeating pattern (§1.13).** BattleGrid, Shooter, Roguelike all hand-roll ~20-line variants. Medium-priority extraction candidate (`LogBox` widget).
 - **Five games, ~30% of the library still unused.** Stable signal now — next game won't change the picture meaningfully. §8 makes delete/keep calls.
+
+---
+
+## §8 — Recommended next library work (prioritized, from 5-game data)
+
+Five games across five genres (grid-duel, platformer, twin-stick shooter, match-3 puzzle, turn-based roguelike) are in hand. The signal is as strong as it's going to get without shipping a real project. This section turns every preceding observation into a concrete, actionable decision: **do this**, **delete this**, **hold for trigger**, or **do not build this**.
+
+Tiers are ordered by priority. Each item names the section it came from for traceability.
+
+### Tier A — Do now (safety + trivial wins)
+
+These are small, backward-compatible, and have concrete evidence. Build them before the next game.
+
+1. **Widen default spritefont charset** (§1.10). Update both the sample-game template and each existing game's `Content/fonts/Arial.spritefont` to cover U+0020..U+00FF plus common typographic punctuation (em-dash, en-dash, curly quotes, ellipsis). Zero API change; just a content-pipeline setting. Prevents the class of crash Puzzle hit at runtime. **~5 lines of XML per game.**
+2. **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). 3-line helper; Puzzle would have used it.
+3. **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** returning `bool` (§1.9). Bounds-clamping variant. Puzzle added the check itself because the existing `WorldToCell` returns out-of-bounds silently.
+4. **Document the `cache-GetLayer<T>` pattern in CLAUDE.md**. Existing `TileMap` consumers all cache the layer reference in their constructor; this is the intended usage. One sentence in docs.
+
+### Tier B — Delete (high confidence after 5 games)
+
+Each has zero or near-zero consumers across five genre-diverse games and isn't "the kind of utility that'll land in game 6" — they've been actively rejected or bypassed.
+
+1. **`Core.Entity`** — 4 of 5 games skip it. Roguelike's `Actor` class is structurally incompatible. §4.3 and the Roguelike bullet above.
+2. **`SpriteSheet.Animated`** — five games, zero consumers. All games use `SpriteSheet.Static` (for buttons) or draw rectangles directly.
+3. **`Utilities.MathUtilities`** — five games, zero consumers. Callers reach for `Vector2.Normalize`, `Math.Clamp`, and `System.Random` directly. Keep those as the idiom.
+4. **`Timing.Timer` (raw class)** — five games, zero consumers. Only `TimerManager.Every` gets used.
+5. **`Events.EventManager.Subscribe<T>`/`Publish<T>` (typed API)** — five games, zero consumers. The string API handles every game's event set. Keep the string API; delete the typed pair.
+6. **`Debugging.PerformanceMonitor`** — five games, zero consumers. If perf problems surface later, `GC.GetTotalMemory` + a frame counter is 10 lines. No need for a class.
+
+**Estimated deletion**: ~400 lines across those six, plus matching test removals. Net simpler library.
+
+### Tier C — Hold (unused but has a clear future trigger)
+
+Don't build or delete. Reassess when the trigger fires.
+
+1. **`Audio.SoundManager`** — triggers on the first game that wants sound. All five samples are silent; a sixth probably won't be.
+2. **`Persistence.SaveSystem` / `SaveFile<T>`** — triggers on the first game with persistent progress (high score, run history, settings).
+3. **`Content.AssetCatalog`** — triggers at ~10 content entries in one game. Currently each game has 1 (the font).
+4. **`Tween.Tween<T>` / `Easing`** — triggers on the first polish pass. Gem-fall (Puzzle), sword flash fade (BattleGrid), camera shake easing all want this. If the next polish pass on any game doesn't reach for Tween, demote to Tier B.
+5. **`Debugging.ILogger` / `ConsoleLogger`** — triggers on the first painful debugging session. BattleGrid's `ConsoleUI` partially fills this role but is UI-coupled.
+6. **`Rendering.DrawManager`** — not in the delete list because it *is* used (BattleGrid + Platformer), but the 2-of-5 adoption rate says it's optional, not essential. Keep it; stop treating it as the default rendering pattern. Update CLAUDE.md accordingly.
+
+### Tier D — Extract these patterns from game code (library wins from 5-game evidence)
+
+Patterns that appeared in 3+ games as identical copy-paste. These are the highest-leverage additions the library can get from this exercise.
+
+1. **`Lifecycle.TitleState` base class / `MenuBuilder` helper**. Five games, ~80 lines of identical copy-paste each. The variation is:
+   - Background color (one `Color`).
+   - Title + subtitle + hint strings.
+   - Button labels + `Action` callbacks.
+   - Button layout (center-stack in all 5 games).
+
+   A base class `abstract class TitleScreenState : GameState` with overridable `Title`/`Subtitle`/`Hint`/`Buttons` properties would collapse each to ~30 lines of actual variation. **High priority — appears in every game.**
+
+2. **`UI.HpBar(rect, current, max, fill, background?, border?)` drawing helper**. BattleGrid, Shooter, Roguelike all hand-roll the same 4-rectangle bar (bg + fill + 4 border strips). **High priority — appears in 3 of 5 games, zero variation in structure.**
+
+3. **`UI.LogBox`** scrolling-text widget (§1.13). BattleGrid, Shooter, Roguelike all hand-roll ~20-line scrolling text panels. Minor variation in fade style. **Medium priority — genuinely shared code, but simple enough that hand-rolling isn't painful.**
+
+4. **`Pooling.PooledEntitySet<T>`** helper (§1.6). Shooter's pattern. Only one consumer today — *defer until a second pooled-entity game appears*. Flagged here so it's not forgotten.
+
+5. **`Timing.CountdownTimer` struct** — `float remaining; bool Tick(float dt) => (remaining -= dt) <= 0;`. BattleGrid's four hand-rolled countdowns (§5/§1.7). Extraction if BattleGrid is revisited; otherwise defer until a game ships ≥3 of these.
+
+### Tier E — Do NOT build (explicitly rejected after evidence)
+
+These are temptations that the data has disarmed.
+
+1. **`TurnScheduler` library primitive** (§1.11). BattleGrid and Roguelike both have turn-ish logic, but implementations don't share meaningful code. Resist.
+2. **Genre modules** (`Platformer`, `GridDuel`, etc.). All five games share almost nothing at the gameplay layer. Extraction today would be sample-of-one for every genre. *Revisit if a second platformer or second grid-duel game ever appears.*
+3. **Procgen helpers in the library** (§1.12). Per-game. `TileLayer<T>` is the correct stopping point.
+4. **Per-game state-visibility split** (§1.5 was open, now reassessed). BattleGrid's inline `Mode` enum works fine; three more games shipped without hitting this friction again. Demote from "build this" to "monitor". If a sixth game needs a pause overlay with a different mechanism than BattleGrid's, revisit.
+
+### Tier F — Still trigger-driven (no change)
+
+- Particle system — first game needing dust/sparks/trails.
+- Input rebinding — first user friction.
+- Pathfinding — first game with a smart AI.
+- FOV — second roguelike or stealth game.
+- Dev console overlay — first painful debugging session.
+- GUI widgets beyond HpBar/LogBox — first menu-heavy screen.
+- Shader / post-processing helpers — first screen-space effect.
+
+### Summary
+
+Concrete next commit plan if you build from here:
+
+1. **One cleanup commit**: widen spritefont charset + add `TileLayer.Swap` + `TileMap.TryWorldToCell` + CLAUDE.md `GetLayer<T>` note. (Tier A, ~1 hour.)
+2. **One deletion commit**: drop `Core.Entity`, `SpriteSheet.Animated`, `MathUtilities`, `Timing.Timer`, typed `EventManager` API, `PerformanceMonitor`, and their tests. Update consumers (really just BattleGrid's `Entity` subscribers). (Tier B, ~2 hours.)
+3. **One extraction commit**: `TitleScreenState` base class; migrate all 5 games to inherit from it. (Tier D item 1, ~2 hours including the migrations. Biggest visible win.)
+4. **Optional second extraction commit**: `HpBar` helper; migrate BattleGrid / Shooter / Roguelike. (Tier D item 2, ~1 hour.)
+
+Everything else waits for a concrete real-project need to surface. The library will be materially smaller, better-understood, and more focused after those three commits than it is today — and the data to justify every change is on file in §§1–7.
