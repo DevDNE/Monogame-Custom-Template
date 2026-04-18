@@ -14,8 +14,8 @@ public class Player
   public const float JumpCutVelocity = -200f;
   public const float Gravity = 1800f;
   public const float MaxFallSpeed = 900f;
-  public const float CoyoteTime = 0.1f;
-  public const float JumpBufferTime = 0.1f;
+  public const float CoyoteTime = 0.15f;
+  public const float JumpBufferTime = 0.15f;
   public const int Width = 32;
   public const int Height = 48;
 
@@ -60,8 +60,7 @@ public class Player
 
     float newVy = Velocity.Y + Gravity * dt;
 
-    bool canJump = _jumpBufferTimer > 0f && _coyoteTimer > 0f;
-    if (canJump)
+    if (_jumpBufferTimer > 0f && _coyoteTimer > 0f)
     {
       newVy = JumpVelocity;
       _jumpBufferTimer = 0f;
@@ -79,6 +78,14 @@ public class Player
 
     MoveX(Velocity.X * dt, platforms);
     MoveY(Velocity.Y * dt, platforms);
+
+    if (_jumpBufferTimer > 0f && IsGrounded)
+    {
+      Velocity = new Vector2(Velocity.X, JumpVelocity);
+      _jumpBufferTimer = 0f;
+      _coyoteTimer = 0f;
+      IsGrounded = false;
+    }
   }
 
   private void MoveX(float delta, IReadOnlyList<Platform> platforms)
