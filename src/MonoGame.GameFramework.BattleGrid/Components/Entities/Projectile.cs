@@ -15,7 +15,7 @@ public class Projectile : Entity
   private Vector2 velocity;
   private readonly DrawManager drawManager;
 
-  public Projectile(DrawManager drawManager, Vector2 position, Vector2 velocity)
+  public Projectile(DrawManager drawManager, Vector2 position, Vector2 velocity, Color tint)
   {
     this.drawManager = drawManager;
     this.velocity = velocity;
@@ -23,7 +23,7 @@ public class Projectile : Entity
       Primitives.Pixel,
       new Rectangle((int)position.X, (int)position.Y, ProjectileWidth, ProjectileHeight),
       name: "Projectile");
-    sprite.Tint = new Color(255, 230, 100);
+    sprite.Tint = tint;
     hurtbox = new Rectangle((int)position.X, (int)position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 

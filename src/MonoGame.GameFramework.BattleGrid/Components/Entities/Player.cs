@@ -12,6 +12,10 @@ namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
 public class Player : Entity
 {
+  public const int MaxHp = 100;
+  public int Hp { get; private set; } = MaxHp;
+  public bool IsAlive => Hp > 0;
+
   private SpriteSheet character;
   private readonly DrawManager _drawManager;
   private readonly KeyboardManager _keyboardManager;
@@ -46,15 +50,25 @@ public class Player : Entity
       _drawManager.RemoveSprite(character);
       character = null;
     }
+    foreach (Projectile p in projectiles) p.UnloadContent();
+    projectiles.Clear();
   }
 
   public override void Update(GameTime gameTime)
   {
+    if (!IsAlive) return;
     CheckMovingUp();
     CheckMovingLeft();
     CheckMovingDown();
     CheckMovingRight();
     CheckFiredProjectile(gameTime);
+  }
+
+  public void Damage(int amount)
+  {
+    Hp -= amount;
+    if (Hp < 0) Hp = 0;
+    _eventManager.TriggerEvent("PlayerHit", this, new GameEventArgs($"Player took {amount} damage"));
   }
 
   private void CheckMovingUp()
@@ -111,20 +125,15 @@ public class Player : Entity
   {
     if (_keyboardManager.WasKeyReleased(Keys.Space))
     {
-      FireProjectile(new Projectile(_drawManager, character.Position, new Vector2(10, 0)));
+      FireProjectile(new Projectile(_drawManager, character.Position, new Vector2(10, 0), new Color(255, 230, 100)));
     }
-    RemoveProjectileOffscreen(gameTime);
-  }
-
-  private void RemoveProjectileOffscreen(GameTime gameTime)
-  {
     for (int i = projectiles.Count - 1; i >= 0; i--)
     {
       projectiles[i].Update(gameTime);
       if (projectiles[i].GetHurtbox().X > BattleConfig.ProjectileOffscreenMaxX ||
           projectiles[i].GetHurtbox().X < 0)
       {
-        _drawManager.RemoveSprite(projectiles[i].GetSprite());
+        projectiles[i].UnloadContent();
         projectiles.RemoveAt(i);
       }
     }
@@ -132,7 +141,7 @@ public class Player : Entity
 
   public void RemoveProjectileOnCollision(Projectile projectile)
   {
-    _drawManager.RemoveSprite(projectile.GetSprite());
+    projectile.UnloadContent();
     projectiles.Remove(projectile);
   }
 

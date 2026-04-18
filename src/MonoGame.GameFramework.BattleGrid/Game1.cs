@@ -72,7 +72,7 @@ public class Game1 : Game
         int vw = _settingsManager.WindowWidth;
         int vh = _settingsManager.WindowHeight;
 
-        PlayState playState = new(_serviceProvider);
+        PlayState playState = new(_serviceProvider, _font, vw, vh);
         TitleState titleState = new(
             _serviceProvider, _font, vw, vh,
             onPlay: () => _gameStateManager.ChangeState(playState),
