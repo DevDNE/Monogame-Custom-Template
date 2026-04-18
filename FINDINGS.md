@@ -1,55 +1,60 @@
 # Findings — Library Review from Building Sample Games
 
-Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`. Updated 2026-04-18 (d) — **Puzzle** sample added (match-3 cascade); first real consumer of `TileMap` + `TileLayer<T>`. Surfaced a SpriteFont charset footgun (§1.10).
+Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`. Updated 2026-04-18 (d) — **Puzzle** sample added (match-3 cascade); first real consumer of `TileMap` + `TileLayer<T>`. Surfaced a SpriteFont charset footgun (§1.10). Updated 2026-04-18 (e) — **Roguelike** sample added (turn-based dungeon crawler with procedural generation); second `TileMap` consumer + hand-rolled turn scheduling. The full 4-game brainstorm lands in §8 next.
 
 ## Context
 
-The framework has been exercised by four sample games in deliberately different genres:
+The framework has been exercised by five sample games in deliberately different genres:
 
 1. **`MonoGame.GameFramework.BattleGrid`** — real-time grid duel inspired by Mega Man Battle Network. 3×3 grid per side, WASD movement, space-bar buster, Tab-triggered chip selection from a pool of four (Cannon / Wide Shot / Sword / Recov), enemy AI alternating between movement and two attack patterns, HP bars + controls hint HUD.
 2. **`MonoGame.GameFramework.Platformer`** — side-scrolling platformer with gravity, AABB collision, camera follow, a patrolling enemy, goal + win state, and a title screen.
 3. **`MonoGame.GameFramework.Shooter`** — top-down twin-stick arena survival. Free WASD movement in a 2400×1600 arena, mouse-aim firing with a 0.15 s cooldown, pursuit-AI enemies spawning in pairs every 1.5 s, score + HP HUD, game-over + R-to-restart.
 4. **`MonoGame.GameFramework.Puzzle`** — match-3 gem board. 7×7 grid of colored gems, click two adjacent cells to swap, matches of 3+ in a row or column clear with gravity-pack and refill cascades, score counter, R to reshuffle.
+5. **`MonoGame.GameFramework.Roguelike`** — turn-based dungeon crawler. Procedurally-generated rooms-and-corridors maps (60×34 `TileLayer<TileKind>`), bump-to-attack combat on a grid, monsters take a turn after every player action, stairs descend to a freshly generated deeper level. No FOV or inventory in MVP.
 
-One more (Roguelike) is planned; its section will be added when it ships.
+All five are playable end-to-end. The library is exercised by 5 distinct consumers across 5 distinct genres; the unused-surface analysis below draws on that full set.
 
 ---
 
 ## Library surface coverage
 
-**Validated by all four games:**
-- `Input.KeyboardManager`, `Input.MouseManager`
+**Validated by all five games:**
+- `Input.KeyboardManager`
 - `Rendering.Primitives` — universal pattern for colored rectangles
-- `Rendering.SpriteSheet.Static` + `SpriteSheet.Tint` — title buttons in all four
+- `Rendering.SpriteSheet.Static` + `SpriteSheet.Tint` — title-screen buttons in all five
 - `Lifecycle.GameState` + `Lifecycle.GameStateManager` (auto-lifecycle)
 - `UI.UIManager` — hit-testing + `OnClick` + `HoveredElement` for title buttons
 
-**Validated by three games:**
-- `Rendering.DrawManager` — BattleGrid + Platformer for world draws; Puzzle + Shooter bypass it and draw directly. Split evenly, suggests `DrawManager` is optional rather than essential.
+**Validated by four games:**
+- `Input.MouseManager` — all except Roguelike (keyboard-only by design)
+
+**Validated by three games (3 of 5):**
+- `Rendering.DrawManager` — BattleGrid + Platformer use it for world draws; Puzzle, Shooter, Roguelike bypass and draw directly. Now a minority pattern — only 2 of 5 games. `DrawManager` is optional, not essential.
+- `Rendering.TileMap` + `TileLayer<T>` — Puzzle (7×7 gems), Roguelike (60×34 dungeon), and conceptually fits BattleGrid's hand-rolled grids. Fully validated.
 
 **Validated by two games:**
 - `Rendering.Camera2D` — Platformer (side-scrolling follow) + Shooter (twin-stick follow + `ScreenToWorld` for mouse aim).
-- `Rendering.TileMap` + `TileLayer<T>` — Puzzle (first real consumer, 7×7 `TileLayer<Gem>`); expected in Roguelike. See §1.9.
 
 **Validated by one game:**
 - Shooter: `Pooling.ObjectPool<T>` (both Projectile and Enemy), `Timing.TimerManager.Every`, `Camera2D.ScreenToWorld`
-- Puzzle: `TileMap.WorldToCell` (mouse-pick), `TileMap.GetCellRect` (rendering), cached `TileLayer<T>` reference
+- Puzzle: `TileMap.WorldToCell` (mouse-pick → grid cell)
+- Roguelike: `TileLayer.Fill`, `TileMap.GetCellRect` for rendering at scale, `TileLayer<TileKind>` with an enum cell type. Also hand-rolled a tiny `TurnScheduler` pattern inline (see §1.11).
 - BattleGrid: `Events.EventManager` (string API), `Lifecycle.SceneManager`, `Persistence.SettingsManager`, `Text.TextManager` (tilde-console log), `Input.GamePadManager`
 - Platformer: `Camera2D.FollowLerp` with snap-on-respawn
 
-**Not used by any game (still speculative after 4):**
+**Not used by any game (still speculative after 5):**
 - `Audio.SoundManager` — not a single game has played a sound
 - `Content.AssetCatalog` — no game has >1 content asset
 - `Debugging.ILogger` / `ConsoleLogger` / `PerformanceMonitor`
 - `Persistence.SaveSystem` / `SaveFile<T>`
-- `Tween.Tween<T>` / `Easing` — Puzzle's gem-fall animation would be the obvious customer but was skipped for MVP scope
-- `Utilities.MathUtilities` — consumers reach for `Vector2.Normalize` / `Math.Clamp` / `System.Random` directly
-- `Events.EventManager` typed API (`Subscribe<T>`/`Publish<T>`) — string API handles all four games' event sets
-- `Timing.Timer` (raw class) — only `TimerManager.Every` is used
-- `Core.Entity` — 3 of 4 games skip it; BattleGrid is the only subscriber. See §4.3.
-- `SpriteSheet.Animated` — four games, zero consumers. Strong deletion candidate.
+- `Tween.Tween<T>` / `Easing`
+- `Utilities.MathUtilities`
+- `Events.EventManager` typed API (`Subscribe<T>`/`Publish<T>`)
+- `Timing.Timer` (raw class)
+- `Core.Entity` — only BattleGrid still subscribes; Platformer, Shooter, Puzzle, Roguelike all skip it.
+- `SpriteSheet.Animated` — five games, zero consumers.
 
-After four games the unused set is ~10 primitives. Roguelike will touch `TileMap` but most of the rest won't move. Deletion candidates list in §6.
+After five games the unused set is ~10 primitives, stable across the last two data points. That set is the basis for §8's delete/keep recommendations.
 
 ---
 
@@ -122,6 +127,19 @@ That block appears twice in Shooter's `PlayState` already. Any game with more en
 Shooter's enemy spawn uses `_timers.Every(1.5f, SpawnWave)` — exactly the shape the API was designed for, and a genuine one-line win over a hand-rolled accumulator. Confirms that `TimerManager` as-is is valuable *when* the pattern is "fire callback every N seconds", even if BattleGrid's per-frame countdowns don't fit.
 
 (BattleGrid's four hand-rolled float counters from §5 still argue for a separate simpler API — the two styles serve different needs. Recommend keeping `TimerManager.Every`/`After` and adding a `CountdownTimer` struct that wraps `float remaining; bool Tick(dt)` for the common case.)
+
+### 1.11 Turn scheduling: the library primitive doesn't fit; the hand-rolled one is trivial (NEW 2026-04-18e)
+Roguelike needed a turn scheduler. The obvious library candidate — `Timing.TimerManager` — doesn't fit at all: timers are wall-clock and fire callbacks; turn scheduling is "after the player acts once, let each monster act once". They have different shapes.
+
+What Roguelike ended up writing is ~10 lines in `PlayState.MonstersTurn`: a plain `foreach monster in list { ... }` loop that runs exactly once after each successful player action. BattleGrid's enemy AI tick is structurally similar (an action alternator gated by a timer). The shared pattern is *"after event X, run a one-shot pass over a set"* — not worth a library primitive.
+
+**Recommendation**: do **not** add a `TurnScheduler` to the library. The per-game loop is 10 lines and wildly different in detail between BattleGrid and Roguelike. Two data points that look superficially similar but don't actually share code — the opposite of a library candidate.
+
+### 1.12 Procgen lives in the game, not the library (NEW 2026-04-18e)
+Roguelike's `DungeonGenerator` is ~80 lines of rooms-and-corridors carving. It operates entirely on `TileLayer<TileKind>` via the existing `Fill`/indexer/`InBounds` API. Nothing about the generator would transfer to another genre — even a second roguelike would likely want different generation (BSP, cellular automata, hand-authored prefabs) depending on its feel. The `TileLayer<T>` API is the right place to stop; generators stay per-game.
+
+### 1.13 Scrolling text log is a third hand-rolled HUD pattern (NEW 2026-04-18e)
+BattleGrid, Shooter, and now Roguelike all hand-roll some variety of scrolling text panel: BattleGrid's console, Shooter's last-event line, Roguelike's combat log with fade. Three games, three implementations, all ≤30 lines. The library has `Text.TextManager.ScrollText` for something like this — none of the games used it (it's coupled to the handle-based text model, which no game other than BattleGrid uses). A simple `LogBox` widget that takes (rect, font, max lines, fade style) would collapse ~90 lines across 3 games. Not an urgent extraction.
 
 ### 1.9 `TileMap` + `TileLayer<T>` handle match-3 well; a few sharp edges (NEW 2026-04-18d)
 Puzzle's `Board` is the first real `TileMap` consumer. Verdict: the core API holds up, but there are sharp edges.
@@ -261,14 +279,14 @@ Some library code was written speculatively and hasn't earned its place yet. Not
 | `Timer` / `TimerManager` | **Partially validated in Shooter** | `TimerManager.Every` fits enemy spawn waves perfectly (§1.7). Raw `Timer` class still unused. BattleGrid's four hand-rolled countdowns still argue for a simpler `CountdownTimer` shape. |
 | `Tween<T>` / `Easing` | Unused after 4 games | BattleGrid's sword-flash alpha and Puzzle's gem-fall animation are the obvious customers; both skipped for MVP scope. If the first polish pass on either doesn't reach for Tween, delete it. |
 | `SaveSystem` / `SaveFile` | Unused | First persistent progress |
-| `TileMap` / `TileLayer` | **Validated in Puzzle** | Clean API in practice; three sharp edges in §1.9 (cache `GetLayer<T>`, add `TryWorldToCell`, add `TileLayer.Swap`). BattleGrid and Platformer still hand-roll their grids; migrating them is reasonable follow-up. |
+| `TileMap` / `TileLayer` | **Validated in Puzzle + Roguelike** | Two consumers at very different scales (7×7 vs 60×34). API scaled cleanly. BattleGrid and Platformer still hand-roll their grids; migration is reasonable follow-up. |
 | `AssetCatalog` | Unused | Any game with ≥ 10 content entries. Both samples are down to one asset each (the font). |
 | `ILogger` / `ConsoleLogger` | Unused | First debugging session painful enough to add logging. `ConsoleUI` partially fills this role in BattleGrid but doesn't use the library's logger. |
 | `MathUtilities` | Unused after 3 games | Shooter used `System.Random` + `Vector2.Normalize` + `Math.Clamp` directly — `MathUtilities.Angle`/`RandomFloat`/`RandomInt` never felt missing. Strong candidate for deletion if puzzle + roguelike also skip it. |
 | `PerformanceMonitor` | Unused | First perf complaint |
 | `EventManager.Subscribe<T>`/`Publish<T>` (typed) | Unused | Any game that grows past ~5 event types. BattleGrid's event set (PlayerMoved/PlayerHit/EnemyHit/FiredProjectile) stayed small enough that the string API is still fine. |
 
-After four games, three primitives moved off the speculative list (`ObjectPool`, `TimerManager.Every`, `TileMap`/`TileLayer`). The remaining unused set is ~10 primitives. Most aggressive deletion candidates if Roguelike also skips them: `PerformanceMonitor`, typed `EventManager` API, all of `MathUtilities`, raw `Timer` class, `Core.Entity`, `SpriteSheet.Animated`, `SoundManager` (not a single game has needed sound), `AssetCatalog` (no game has >1 content asset).
+After five games, three primitives are validated (`ObjectPool`, `TimerManager.Every`, `TileMap`/`TileLayer`). Three more are partially validated (`DrawManager`, `Camera2D`). The rest — roughly 30% of the library — has never been used. That's the steady-state signal. §8 below turns this into concrete keep/delete recommendations.
 
 ---
 
@@ -330,3 +348,13 @@ Deferred — wait for a trigger:
 - **SpriteFont charset footgun (§1.10) is the first library-level safety issue.** Any game shipped to real users would hit it. Fixing this in the sample-game template is cheap; fixing it properly in the library needs a small decision (widen font, or add safe-draw). Priority bumped to "do this before the next game if possible".
 - **Four games, zero uses of `SoundManager`, `AssetCatalog`, `SaveSystem`, typed events, `MathUtilities`, raw `Timer`, `PerformanceMonitor`, `SpriteSheet.Animated`.** That's roughly a third of the library that has yet to justify its existence. §8 should make delete-or-keep recommendations on each.
 - **`DrawManager` is validated but not essential.** Puzzle and Shooter skipped it and drew entities directly. Either pattern works; the library doesn't force it. That's the right shape.
+
+### Updated after Roguelike (2026-04-18e) — and this is the fifth game
+
+- **`TileMap` scales from 49 cells to 2,040 cells with zero friction.** Two consumers, two very different use-cases (match-3 gems vs. procgen dungeon), same API. Confirmed keeper.
+- **`Core.Entity` deletion is now unambiguous.** 4 of 5 games skip it. Roguelike's `Actor` base class is a different shape entirely (grid `Col`/`Row` + HP + `Damage`), directly incompatible with `Core.Entity`'s `ContentManager`-centric lifecycle. No future game is likely to adopt `Core.Entity` as-is.
+- **`TitleState` copy-paste is now 5 games deep.** Same ~80 lines per game, still zero variation beyond labels + background color. This is unambiguously a library extraction candidate; §8 will make the concrete proposal.
+- **Turn scheduling doesn't want a library primitive.** §1.11 argues against adding a `TurnScheduler`: the two games with turn-ish logic (BattleGrid action ticks, Roguelike monster passes) don't share enough to justify it. Good example of a superficially-similar-but-actually-distinct pattern.
+- **Procgen lives per-game (§1.12).** The `TileLayer<T>` API is the right stopping point; generators shouldn't live in the library.
+- **Scrolling text logs are a third repeating pattern (§1.13).** BattleGrid, Shooter, Roguelike all hand-roll ~20-line variants. Medium-priority extraction candidate (`LogBox` widget).
+- **Five games, ~30% of the library still unused.** Stable signal now — next game won't change the picture meaningfully. §8 makes delete/keep calls.
