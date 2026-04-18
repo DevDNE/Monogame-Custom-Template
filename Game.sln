@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework.Demo", "src\MonoGame.GameFramework.Demo\MonoGame.GameFramework.Demo.csproj", "{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame.GameFramework.Tests", "src\MonoGame.GameFramework.Tests\MonoGame.GameFramework.Tests.csproj", "{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}"
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -49,9 +51,22 @@ Global
 		{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}.Release|x64.Build.0 = Release|Any CPU
 		{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}.Release|x86.ActiveCfg = Release|Any CPU
 		{8BAD4B1A-6749-4D71-BC03-CE648660B3F0}.Release|x86.Build.0 = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|x64.Build.0 = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Debug|x86.Build.0 = Debug|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|x64.ActiveCfg = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|x64.Build.0 = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|x86.ActiveCfg = Release|Any CPU
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2B901CA0-E421-4A9E-8A2F-7CBF91A58EC8} = {77620E86-1D91-47DC-AFF7-206D1B7C1FAD}
 		{8BAD4B1A-6749-4D71-BC03-CE648660B3F0} = {77620E86-1D91-47DC-AFF7-206D1B7C1FAD}
+		{4E8F7D53-7F20-4DFE-8CC3-6F064F1711C7} = {77620E86-1D91-47DC-AFF7-206D1B7C1FAD}
 	EndGlobalSection
 EndGlobal
