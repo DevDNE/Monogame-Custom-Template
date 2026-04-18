@@ -11,8 +11,11 @@ public class Player
   public const float GroundAcceleration = 1800f;
   public const float AirAcceleration = 1200f;
   public const float JumpVelocity = -700f;
+  public const float JumpCutVelocity = -200f;
   public const float Gravity = 1800f;
   public const float MaxFallSpeed = 900f;
+  public const float CoyoteTime = 0.1f;
+  public const float JumpBufferTime = 0.1f;
   public const int Width = 32;
   public const int Height = 48;
 
@@ -23,6 +26,8 @@ public class Player
   public Rectangle Bounds => new((int)Position.X, (int)Position.Y, Width, Height);
 
   private readonly Vector2 _spawnPosition;
+  private float _coyoteTimer;
+  private float _jumpBufferTimer;
 
   public Player(Vector2 spawnPosition)
   {
@@ -35,18 +40,39 @@ public class Player
     Position = _spawnPosition;
     Velocity = Vector2.Zero;
     IsGrounded = false;
+    _coyoteTimer = 0f;
+    _jumpBufferTimer = 0f;
   }
 
-  public void Update(GameTime gameTime, IReadOnlyList<Platform> platforms, float inputX, bool jumpPressed)
+  public void Update(GameTime gameTime, IReadOnlyList<Platform> platforms, float inputX, bool jumpPressed, bool jumpHeld)
   {
     float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+    if (IsGrounded) _coyoteTimer = CoyoteTime;
+    else _coyoteTimer = MathF.Max(0f, _coyoteTimer - dt);
+
+    if (jumpPressed) _jumpBufferTimer = JumpBufferTime;
+    else _jumpBufferTimer = MathF.Max(0f, _jumpBufferTimer - dt);
 
     float targetVx = inputX * MoveSpeed;
     float accel = IsGrounded ? GroundAcceleration : AirAcceleration;
     float newVx = ApproachTarget(Velocity.X, targetVx, accel * dt);
 
     float newVy = Velocity.Y + Gravity * dt;
-    if (jumpPressed && IsGrounded) newVy = JumpVelocity;
+
+    bool canJump = _jumpBufferTimer > 0f && _coyoteTimer > 0f;
+    if (canJump)
+    {
+      newVy = JumpVelocity;
+      _jumpBufferTimer = 0f;
+      _coyoteTimer = 0f;
+    }
+
+    if (!jumpHeld && newVy < JumpCutVelocity)
+    {
+      newVy = JumpCutVelocity;
+    }
+
     newVy = MathHelper.Clamp(newVy, -MaxFallSpeed, MaxFallSpeed);
 
     Velocity = new Vector2(newVx, newVy);

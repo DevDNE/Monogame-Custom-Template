@@ -65,8 +65,9 @@ public class Game1 : Game
     if (_keyboardManager.IsKeyDown(Keys.A) || _keyboardManager.IsKeyDown(Keys.Left)) inputX -= 1f;
     if (_keyboardManager.IsKeyDown(Keys.D) || _keyboardManager.IsKeyDown(Keys.Right)) inputX += 1f;
     bool jumpPressed = _keyboardManager.WasKeyPressed(Keys.Space);
+    bool jumpHeld = _keyboardManager.IsKeyDown(Keys.Space);
 
-    _player.Update(gameTime, _platforms, inputX, jumpPressed);
+    _player.Update(gameTime, _platforms, inputX, jumpPressed, jumpHeld);
     base.Update(gameTime);
   }
 
