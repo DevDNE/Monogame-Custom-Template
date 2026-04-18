@@ -176,6 +176,16 @@ Both are worth doing; (1) has higher leverage. Worth flagging in CLAUDE.md regar
 >
 > **Gotcha caught while fixing this (NEW 2026-04-18, §1.15)**: MonoGame's content pipeline incremental cache will silently skip rebuilding a spritefont `.xnb` when the source `.spritefont` XML changes shape but preserves the expected schema. `dotnet build` reports success without a `Building Font …` log line, and the cached `.xnb` continues to only rasterize the old charset. First attempt at this fix shipped, built green, and still crashed at runtime for exactly that reason. Workaround: delete `Content/bin` and `Content/obj` in each game before rebuilding. Longer-term: flag this in CLAUDE.md, or add a `dotnet build /t:Rebuild` note to the project readme.
 
+### 1.16 `GameStateManager.Update`/`Draw` threw when a state mutated the stack (NEW 2026-04-18, post-AutoBattler)
+
+A genuine library bug, not a content-pipeline quirk. AutoBattler's `CombatState.Update` calls `_onCombatEnded(winner)` when a side is eliminated, and that callback calls `_gameStateManager.ChangeState(_postCombatState)`. `ChangeState` pops and pushes on the internal `Stack<GameState>`, but `Update` was iterating the same stack with `foreach` — which throws `InvalidOperationException: Collection was modified after the enumerator was instantiated`.
+
+Three previous samples hit this pattern coincidentally without crashing (BattleGrid's `PlayState.Entered` pushes a DebugState; the platformer transitions on a button click — both from outside the `Update` iteration). AutoBattler was the first to transition *from within* a state's own `Update`.
+
+**Fix**: snapshot the stack into a reusable `List<GameState>` scratch buffer before iterating, so mid-iteration mutations don't invalidate the enumerator. Same treatment for `Draw`. Allocation-free after the first call once the list capacity stabilizes. Covered by a new `GameStateManagerTests.Update_AllowsStateToChangeStateMidIteration` regression test (100/100 total). Shipped in the same commit as this note.
+
+**Finding**: the original 2026-04-18a auto-lifecycle fix (commit `702dd54`) made it *easier* for consumers to transition during Update, because `ChangeState` now does the state-lifecycle ceremony for you. This bug was latent before that commit because nobody was transitioning inline; the cleanup that removed the manual ceremony also removed the natural "call it after Update returns" habit. A good example of a library improvement unintentionally widening the surface area for a pre-existing latent bug.
+
 ### 1.8 `Camera2D.ScreenToWorld` is ergonomic for mouse-aim (NEW 2026-04-18c)
 Shooter's aim direction needed three lines end-to-end:
 ```csharp

@@ -75,4 +75,39 @@ public class GameStateManagerTests
     b.EnteredCount.Should().Be(1);
     b.RevealedCount.Should().Be(0);
   }
+
+  // Regression test: AutoBattler's CombatState.Update calls ChangeState on the
+  // manager when the battle ends. That mutation during a foreach over the
+  // internal Stack<GameState> threw InvalidOperationException. Fix was to
+  // snapshot the stack before iterating.
+  private class SelfTransitioningState : GameState
+  {
+    public GameStateManager Manager;
+    public GameState Replacement;
+    public int UpdateCount;
+    public override void Entered() { IsActive = true; }
+    public override void Leaving() { }
+    public override void Obscuring() { IsActive = false; }
+    public override void Revealed() { IsActive = true; }
+    public override void Update(GameTime gameTime)
+    {
+      UpdateCount++;
+      if (UpdateCount == 1) Manager.ChangeState(Replacement);
+    }
+  }
+
+  [Fact]
+  public void Update_AllowsStateToChangeStateMidIteration()
+  {
+    GameStateManager m = new();
+    FakeState next = new();
+    SelfTransitioningState first = new() { Manager = m, Replacement = next };
+    m.PushState(first);
+
+    m.Invoking(x => x.Update(new GameTime())).Should().NotThrow();
+
+    first.UpdateCount.Should().Be(1);
+    next.EnteredCount.Should().Be(1);
+    m.PeekState().Should().BeSameAs(next);
+  }
 }
