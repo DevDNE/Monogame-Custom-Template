@@ -4,11 +4,12 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Events;
-using MonoGame.GameFramework.Managers;
+using MonoGame.GameFramework.Input;
+using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Demo.Components.UI;
 
 namespace MonoGame.GameFramework.Demo.GameStates;
-public class DebugState : MonoGame.GameFramework.GameStates.GameState
+public class DebugState : GameState
 {
   private ConsoleUI _consoleUI;
   private KeyboardManager _keyboardManager;

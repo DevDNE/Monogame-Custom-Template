@@ -1,8 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Graphics;
-using MonoGame.GameFramework.Components.Entities;
+using Microsoft.Xna.Framework.Graphics;
+using MonoGame.GameFramework.Core;
+using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.Demo.Components.Entities;
 public class Projectile : Entity
@@ -34,11 +34,9 @@ public class Projectile : Entity
   {
     if (sprite != null)
     {
-      sprite.Texture.Dispose();
-      sprite.Texture = null;
+      drawManager.RemoveSprite(sprite);
+      sprite = null;
     }
-    drawManager.RemoveSprite(sprite);
-    sprite = null;
   }
 
   public override void Update(GameTime gameTime)

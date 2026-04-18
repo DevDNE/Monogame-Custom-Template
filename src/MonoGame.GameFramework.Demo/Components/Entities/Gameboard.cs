@@ -2,9 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGame.GameFramework.Graphics;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Components.Entities;
+using MonoGame.GameFramework.Core;
+using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.Demo.Components.Entities;
 public class Gameboard : Entity
@@ -31,37 +30,13 @@ public class Gameboard : Entity
 
   public override void LoadContent(ContentManager content)
   {
-    topTile = new SpriteSheet("TopTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 24,
-      new Rectangle[] { new Rectangle(0, 0, 40, 24) },
-      new Rectangle(200, 250, 80, 48), 0f, 0
-    );
-    midTile = new SpriteSheet("MidTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 24,
-      new Rectangle[] { new Rectangle(48, 0, 40, 24) },
-      new Rectangle(200, 298, 80, 48), 0f, 0
-    );
-    botTile = new SpriteSheet("BotTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 32,
-      new Rectangle[] { new Rectangle(96, 0, 40, 32) },
-      new Rectangle(200, 346, 80, 52), 0f, 0
-    );
-
-    enemyTopTile = new SpriteSheet("TopTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 24,
-      new Rectangle[] { new Rectangle(0, 0, 40, 24) },
-      new Rectangle(200, 250, 80, 48), 0f, 0
-    );
-    enemyMidTile = new SpriteSheet("MidTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 24,
-      new Rectangle[] { new Rectangle(48, 0, 40, 24) },
-      new Rectangle(200, 298, 80, 48), 0f, 0
-    );
-    enemyBotTile = new SpriteSheet("BotTile", content.Load<Texture2D>("gfx/Battlefield_Tile"),
-      new Vector2(0, 0), 40, 32,
-      new Rectangle[] { new Rectangle(96, 0, 40, 32) },
-      new Rectangle(200, 346, 80, 52), 0f, 0
-    );
+    Texture2D tileTexture = content.Load<Texture2D>("gfx/Battlefield_Tile");
+    topTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 250, 80, 48), sourceFrame: new Rectangle(0, 0, 40, 24), name: "TopTile");
+    midTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 298, 80, 48), sourceFrame: new Rectangle(48, 0, 40, 24), name: "MidTile");
+    botTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 346, 80, 52), sourceFrame: new Rectangle(96, 0, 40, 32), name: "BotTile");
+    enemyTopTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 250, 80, 48), sourceFrame: new Rectangle(0, 0, 40, 24), name: "TopTile");
+    enemyMidTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 298, 80, 48), sourceFrame: new Rectangle(48, 0, 40, 24), name: "MidTile");
+    enemyBotTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 346, 80, 52), sourceFrame: new Rectangle(96, 0, 40, 32), name: "BotTile");
 
     for (int i = 0; i < 3; i++)
     {

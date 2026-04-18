@@ -1,9 +1,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using MonoGame.GameFramework.Lifecycle;
 
 namespace MonoGame.GameFramework.Demo.Scenes;
 
-public class FirstScene : MonoGame.GameFramework.Scenes.GameScene
+public class FirstScene : GameScene
 {
     public FirstScene()
     {

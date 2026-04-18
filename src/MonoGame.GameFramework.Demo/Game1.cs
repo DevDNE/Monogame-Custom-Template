@@ -2,8 +2,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.GameStates;
+using MonoGame.GameFramework.Audio;
+using MonoGame.GameFramework.Input;
+using MonoGame.GameFramework.Lifecycle;
+using MonoGame.GameFramework.Persistence;
+using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Text;
+using MonoGame.GameFramework.UI;
 using MonoGame.GameFramework.Demo.GameStates;
 
 namespace MonoGame.GameFramework.Demo;
@@ -22,7 +27,6 @@ public class Game1 : Game
     private GamePadManager _gamePadManager;
     private GameStateManager _gameStateManager;
     private SceneManager _sceneManager;
-    // private SteamworksManager _steamworksManager;
     private SpriteBatch _spriteBatch;
     private GameState initialState;
 
@@ -44,7 +48,6 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        //_steamworksManager = _serviceProvider.GetService<SteamworksManager>();
         Window.Title = _settingsManager.WindowTitle;
         _drawManager = _serviceProvider.GetService<DrawManager>();
         _textManager = _serviceProvider.GetService<TextManager>();
@@ -64,7 +67,6 @@ public class Game1 : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _textManager.LoadContent(Content.Load<SpriteFont>("fonts/Arial"));
-        _uiManager.LoadContent(_drawManager);
         _soundManager.LoadContent(Content);
         _sceneManager.LoadContent(Content);
         _gameStateManager.PeekState().Entered();
@@ -76,6 +78,7 @@ public class Game1 : Game
         _keyboardManager.Update();
         _mouseManager.Update();
         _gamePadManager.Update();
+        _uiManager.Update(gameTime);
         _gameStateManager.Update(gameTime);
         base.Update(gameTime);
     }
@@ -85,6 +88,7 @@ public class Game1 : Game
         GraphicsDevice.Clear(Color.CornflowerBlue);
         _spriteBatch.Begin();
         _drawManager.Draw(_spriteBatch);
+        _gameStateManager.Draw(_spriteBatch, gameTime);
         _textManager.Draw(_spriteBatch);
         _spriteBatch.End();
         base.Draw(gameTime);
@@ -92,7 +96,6 @@ public class Game1 : Game
 
     protected override void OnExiting(object sender, ExitingEventArgs args)
     {
-        //_steamworksManager.Shutdown();
         base.OnExiting(sender, args);
     }
 }

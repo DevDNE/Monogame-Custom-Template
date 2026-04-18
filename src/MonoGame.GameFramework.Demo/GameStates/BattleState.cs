@@ -4,15 +4,14 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Linq;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Scenes;
-using MonoGame.GameFramework.Engine.Physics;
 using MonoGame.GameFramework.Events;
+using MonoGame.GameFramework.Lifecycle;
+using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Demo.Components.Entities;
 using MonoGame.GameFramework.Demo.Scenes;
 
 namespace MonoGame.GameFramework.Demo.GameStates;
-public class BattleState : MonoGame.GameFramework.GameStates.GameState
+public class BattleState : GameState
 {
     private GraphicsDevice _graphicsDevice;
   private ServiceProvider _serviceProvider;
@@ -68,6 +67,11 @@ public class BattleState : MonoGame.GameFramework.GameStates.GameState
     CheckCollisions();
   }
 
+  public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
+  {
+    _sceneManager.Draw(spriteBatch, gameTime);
+  }
+
   private void CheckCollisions()
   {
     BattleScene battleScene = _battleScene as BattleScene;
@@ -76,7 +80,7 @@ public class BattleState : MonoGame.GameFramework.GameStates.GameState
 
     foreach (Projectile p in player.GetProjectiles().ToList())
     {
-      if (Collision.CheckCollisions(p.GetHurtbox(), enemyPlayer.GetHitbox()))
+      if (p.GetHurtbox().Intersects(enemyPlayer.GetHitbox()))
       {
         player.RemoveProjectileOnCollision(p);
         _eventManager.TriggerEvent("EnemyHit", this, new GameEventArgs("Enemy  hit"));

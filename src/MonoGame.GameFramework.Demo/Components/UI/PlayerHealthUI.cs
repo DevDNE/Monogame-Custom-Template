@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
-using MonoGame.GameFramework.Graphics;
+using MonoGame.GameFramework.Rendering;
 using Microsoft.Extensions.DependencyInjection;
-using MonoGame.GameFramework.Managers;
+using MonoGame.GameFramework.UI;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -18,10 +18,11 @@ public class PlayerHealthUI
 
   public void LoadContent(ContentManager content)
   {
-    _healthBar = new SpriteSheet("projectileSprite", content.Load<Texture2D>("gfx/Player_Idle"),
-      new Vector2(200, 270), 35, 40,
-      new Rectangle[] { new(0, 0, 35, 40), },
-      new Rectangle(100, 100, 35, 40), 0.5f, 0);
+    _healthBar = SpriteSheet.Static(
+      content.Load<Texture2D>("gfx/Player_Idle"),
+      new Rectangle(100, 100, 35, 40),
+      sourceFrame: new Rectangle(0, 0, 35, 40),
+      name: "projectileSprite");
     _uiManager.AddUIElement("player", _healthBar);
   }
 
@@ -29,9 +30,8 @@ public class PlayerHealthUI
   {
     if (_healthBar != null)
     {
-      _healthBar.Texture.Dispose();
-      _healthBar.Texture = null;
+      _uiManager.RemoveUIElement("player", _healthBar);
+      _healthBar = null;
     }
-    _uiManager.RemoveUIElement("player", _healthBar);
   }
 }

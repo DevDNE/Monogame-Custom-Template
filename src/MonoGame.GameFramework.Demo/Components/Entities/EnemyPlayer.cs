@@ -2,10 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Graphics;
+using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Events;
-using MonoGame.GameFramework.Components.Entities;
+using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Text;
 
 namespace MonoGame.GameFramework.Demo.Components.Entities;
 
@@ -18,6 +18,7 @@ public class EnemyPlayer : Entity
   private EventManager _eventManager;
 
   private int hp = 100;
+  private TextHandle hpText;
   private Vector2 initialPosition = new Vector2(485, 250);
   private Rectangle hitbox;
   private int hitboxWidth = 38;
@@ -39,9 +40,8 @@ public class EnemyPlayer : Entity
 
   public override void LoadContent(ContentManager content)
   {
-    character = new SpriteSheet("PlayerCharacter",
+    character = SpriteSheet.Animated(
       content.Load<Texture2D>("gfx/aquaStyle"),
-      initialPosition, originalWidth, originalHeight,
       new Rectangle[] {
         new(0, 0, originalWidth, originalHeight),
         new(48, 0, originalWidth, originalHeight),
@@ -49,8 +49,8 @@ public class EnemyPlayer : Entity
         new(144, 0, originalWidth, originalHeight)
       },
       new Rectangle((int)initialPosition.X, (int)initialPosition.Y, displayedWidth, displayedHeight),
-      frameInterval, currentFrame);
-     _textManager.AddText("enemy", hp.ToString() ,new Vector2(500, 150), Color.Red);
+      frameInterval, name: "PlayerCharacter", startFrame: currentFrame);
+    hpText = _textManager.AddText("enemy", hp.ToString(), new Vector2(500, 150), Color.Red);
 
     _drawManager.AddSprite(character);
   }
@@ -59,12 +59,9 @@ public class EnemyPlayer : Entity
   {
     if (character != null)
     {
-      character.Texture.Dispose();
-      character.Texture = null;
+      _drawManager.RemoveSprite(character);
+      character = null;
     }
-    _drawManager.RemoveSprite(character);
-    character = null;
-
     _eventManager.Unsubscribe("EnemyHit", OnProjectileHit);
   }
 
@@ -77,12 +74,7 @@ public class EnemyPlayer : Entity
 
   public void OnProjectileHit(object sender, GameEventArgs e)
   {
-    int hpBeforeHit = hp;
     hp -= 10;
-    if (hp > 0) {
-      _textManager.UpdateText("enemy", hpBeforeHit.ToString(), hp.ToString(), new Vector2(500, 150), Color.Red);
-    } else {
-      _textManager.UpdateText("enemy", hpBeforeHit.ToString(), "Defeated", new Vector2(500, 150), Color.Red);
-    }
+    _textManager.SetText(hpText, hp > 0 ? hp.ToString() : "Defeated");
   }
 }

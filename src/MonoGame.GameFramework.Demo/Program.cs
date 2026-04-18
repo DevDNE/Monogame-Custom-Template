@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using dotenv.net;
-using MonoGame.GameFramework.DependencyInjection;
+using MonoGame.GameFramework.Core;
 
 namespace MonoGame.GameFramework.Demo;
 

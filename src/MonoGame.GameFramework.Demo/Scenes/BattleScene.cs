@@ -2,12 +2,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
-using MonoGame.GameFramework.Managers;
+using MonoGame.GameFramework.Lifecycle;
+using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Demo.Components.Entities;
 
 namespace MonoGame.GameFramework.Demo.Scenes;
-public class BattleScene : MonoGame.GameFramework.Scenes.GameScene
+public class BattleScene : GameScene
 {
   private Player _player;
   private EnemyPlayer _enemyPlayer;
@@ -55,5 +57,16 @@ public class BattleScene : MonoGame.GameFramework.Scenes.GameScene
     _gameboard.Update(gameTime);
     _player.Update(gameTime);
     _enemyPlayer.Update(gameTime);
+  }
+
+  public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
+  {
+    _gameboard.Draw(spriteBatch, gameTime);
+    _player.Draw(spriteBatch, gameTime);
+    _enemyPlayer.Draw(spriteBatch, gameTime);
+    foreach (Projectile p in _player.GetProjectiles())
+    {
+      p.Draw(spriteBatch, gameTime);
+    }
   }
 }

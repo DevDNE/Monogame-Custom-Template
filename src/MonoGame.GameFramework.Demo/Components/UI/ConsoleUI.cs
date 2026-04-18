@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Graphics;
 using MonoGame.GameFramework.Events;
+using MonoGame.GameFramework.Persistence;
+using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Text;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.Demo.Components.UI;
 public class ConsoleUI
@@ -27,9 +29,9 @@ public class ConsoleUI
     backgroundTexture = new Texture2D(graphicsDevice, 1, 1);
     backgroundTexture.SetData(new[] { Color.Black * 0.5f });
 
-    backgroundRectangle = new Rectangle(0, 0, _settingsManager.GetWindowWidth(), consoleHeight);
+    backgroundRectangle = new Rectangle(0, 0, _settingsManager.WindowWidth, consoleHeight);
 
-    consoleSpriteSheet = new SpriteSheet("console", backgroundTexture, new Vector2(0, 0), _settingsManager.GetWindowWidth(), consoleHeight, new Rectangle[] { backgroundRectangle }, backgroundRectangle, 0, 0);
+    consoleSpriteSheet = SpriteSheet.Static(backgroundTexture, backgroundRectangle, sourceFrame: backgroundRectangle, name: "console");
     _uiManager.AddUIElement("console", consoleSpriteSheet);
 
     _eventManager.Subscribe("toggleConsole", ToggleConsole);
@@ -50,7 +52,6 @@ public class ConsoleUI
   public void ToggleConsole(object sender, GameEventArgs e)
   {
     consoleSpriteSheet.DestinationFrame = new Rectangle(0, 0, consoleSpriteSheet.DestinationFrame.Width, consoleSpriteSheet.DestinationFrame.Height == 0 ? consoleHeight : 0);
-    _uiManager.UpdateUIElement("console", consoleSpriteSheet);
     _textManager.ClearGroup("console");
   }
 

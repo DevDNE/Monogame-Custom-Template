@@ -4,10 +4,10 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
-using MonoGame.GameFramework.Managers;
-using MonoGame.GameFramework.Graphics;
+using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Events;
-using MonoGame.GameFramework.Components.Entities;
+using MonoGame.GameFramework.Input;
+using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Demo.Components.UI;
 
 namespace MonoGame.GameFramework.Demo.Components.Entities;
@@ -46,9 +46,8 @@ public class Player : Entity
   public override void LoadContent(ContentManager content)
   {
     playerHealthUI.LoadContent(content);
-    character = new SpriteSheet("PlayerCharacter",
+    character = SpriteSheet.Animated(
       content.Load<Texture2D>("gfx/aquaStyle"),
-      initialPosition, originalWidth, originalHeight,
       new Rectangle[] {
         new(0, 0, originalWidth, originalHeight),
         new(48, 0, originalWidth, originalHeight),
@@ -56,12 +55,13 @@ public class Player : Entity
         new(144, 0, originalWidth, originalHeight)
       },
       new Rectangle((int)initialPosition.X, (int)initialPosition.Y, displayedWidth, displayedHeight),
-      frameInterval, currentFrame);
+      frameInterval, name: "PlayerCharacter", startFrame: currentFrame);
 
-    tempProjectile = new SpriteSheet("projectileSprite", content.Load<Texture2D>("gfx/Player_Idle"),
-      new Vector2(200, 270), 35, 40,
-      new Rectangle[] { new(0, 0, 35, 40), },
-      new Rectangle(100, 100, 35, 40), 0.5f, 0);
+    tempProjectile = SpriteSheet.Static(
+      content.Load<Texture2D>("gfx/Player_Idle"),
+      new Rectangle(100, 100, 35, 40),
+      sourceFrame: new Rectangle(0, 0, 35, 40),
+      name: "projectileSprite");
 
     _drawManager.AddSprite(character);
   }
@@ -70,12 +70,9 @@ public class Player : Entity
   {
     if (character != null)
     {
-      character.Texture.Dispose();
-      character.Texture = null;
+      _drawManager.RemoveSprite(character);
+      character = null;
     }
-    _drawManager.RemoveSprite(character);
-    character = null;
-
     playerHealthUI.UnloadContent();
   }
 
