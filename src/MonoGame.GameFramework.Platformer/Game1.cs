@@ -19,11 +19,14 @@ public class Game1 : Game
   private readonly GraphicsDeviceManager _graphics;
   private SpriteBatch _spriteBatch;
   private KeyboardManager _keyboardManager;
+  private SpriteFont _font;
   private Texture2D _pixel;
   private Player _player;
   private List<Platform> _platforms;
   private List<Enemy> _enemies;
+  private Goal _goal;
   private Camera2D _camera;
+  private bool _won;
 
   public Game1(ServiceProvider serviceProvider)
   {
@@ -50,17 +53,18 @@ public class Game1 : Game
     _spriteBatch = new SpriteBatch(GraphicsDevice);
     _pixel = new Texture2D(GraphicsDevice, 1, 1);
     _pixel.SetData(new[] { Color.White });
+    _font = Content.Load<SpriteFont>("fonts/Arial");
 
     _player = new Player(new Vector2(200, 60));
     _platforms = new List<Platform>
     {
-      new(new Rectangle(0, 540, 1050, 36)),      // ground chunk A
-      new(new Rectangle(1200, 540, 1200, 36)),   // ground chunk B (150px gap)
+      new(new Rectangle(0, 540, 1050, 36)),
+      new(new Rectangle(1200, 540, 1200, 36)),
       new(new Rectangle(130, 420, 180, 24)),
       new(new Rectangle(430, 340, 180, 24)),
       new(new Rectangle(740, 420, 180, 24)),
-      new(new Rectangle(430, 180, 180, 24)),     // ceiling over middle
-      new(new Rectangle(1050, 440, 180, 24)),    // stepping stone over the gap
+      new(new Rectangle(430, 180, 180, 24)),
+      new(new Rectangle(1050, 440, 180, 24)),
       new(new Rectangle(1400, 360, 180, 24)),
       new(new Rectangle(1700, 280, 180, 24)),
       new(new Rectangle(2000, 380, 260, 24)),
@@ -70,6 +74,8 @@ public class Game1 : Game
     {
       new(x: 1400, y: 360 - Enemy.Height, patrolMinX: 1400, patrolMaxX: 1400 + 180),
     };
+
+    _goal = new Goal(new Vector2(2300, 540 - Goal.Height));
 
     _camera = new Camera2D(new Vector2(ViewportWidth, ViewportHeight))
     {
@@ -84,6 +90,7 @@ public class Game1 : Game
   private void Respawn()
   {
     _player.Respawn();
+    _won = false;
     if (_camera != null) _camera.Position = PlayerCenter();
   }
 
@@ -93,27 +100,34 @@ public class Game1 : Game
     if (_keyboardManager.IsKeyDown(Keys.Escape)) Exit();
     if (_keyboardManager.WasKeyPressed(Keys.R)) Respawn();
 
-    float inputX = 0f;
-    if (_keyboardManager.IsKeyDown(Keys.A) || _keyboardManager.IsKeyDown(Keys.Left)) inputX -= 1f;
-    if (_keyboardManager.IsKeyDown(Keys.D) || _keyboardManager.IsKeyDown(Keys.Right)) inputX += 1f;
-    bool jumpPressed = _keyboardManager.WasKeyPressed(Keys.Space);
-    bool jumpHeld = _keyboardManager.IsKeyDown(Keys.Space);
-
-    _player.Update(gameTime, _platforms, inputX, jumpPressed, jumpHeld);
-    foreach (Enemy e in _enemies) e.Update(gameTime);
-
-    if (_player.Position.Y > DeathPlaneY)
+    if (!_won)
     {
-      Respawn();
-    }
-    else
-    {
-      foreach (Enemy e in _enemies)
+      float inputX = 0f;
+      if (_keyboardManager.IsKeyDown(Keys.A) || _keyboardManager.IsKeyDown(Keys.Left)) inputX -= 1f;
+      if (_keyboardManager.IsKeyDown(Keys.D) || _keyboardManager.IsKeyDown(Keys.Right)) inputX += 1f;
+      bool jumpPressed = _keyboardManager.WasKeyPressed(Keys.Space);
+      bool jumpHeld = _keyboardManager.IsKeyDown(Keys.Space);
+
+      _player.Update(gameTime, _platforms, inputX, jumpPressed, jumpHeld);
+      foreach (Enemy e in _enemies) e.Update(gameTime);
+
+      if (_player.Position.Y > DeathPlaneY)
       {
-        if (_player.Bounds.Intersects(e.Bounds))
+        Respawn();
+      }
+      else if (_player.Bounds.Intersects(_goal.Bounds))
+      {
+        _won = true;
+      }
+      else
+      {
+        foreach (Enemy e in _enemies)
         {
-          Respawn();
-          break;
+          if (_player.Bounds.Intersects(e.Bounds))
+          {
+            Respawn();
+            break;
+          }
         }
       }
     }
@@ -127,11 +141,28 @@ public class Game1 : Game
   protected override void Draw(GameTime gameTime)
   {
     GraphicsDevice.Clear(new Color(20, 24, 40));
+
     _spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
     foreach (Platform p in _platforms) p.Draw(_spriteBatch, _pixel);
     foreach (Enemy e in _enemies) e.Draw(_spriteBatch, _pixel);
+    _goal.Draw(_spriteBatch, _pixel);
     _player.Draw(_spriteBatch, _pixel);
     _spriteBatch.End();
+
+    if (_won)
+    {
+      _spriteBatch.Begin();
+      const string line1 = "You Win!";
+      const string line2 = "Press R to play again";
+      Vector2 size1 = _font.MeasureString(line1);
+      Vector2 size2 = _font.MeasureString(line2);
+      Vector2 center = new(ViewportWidth * 0.5f, ViewportHeight * 0.5f);
+      _spriteBatch.Draw(_pixel, new Rectangle(0, 0, ViewportWidth, ViewportHeight), new Color(0, 0, 0, 140));
+      _spriteBatch.DrawString(_font, line1, new Vector2(center.X - size1.X * 0.5f, center.Y - size1.Y - 4), Color.White);
+      _spriteBatch.DrawString(_font, line2, new Vector2(center.X - size2.X * 0.5f, center.Y + 4), new Color(200, 200, 200));
+      _spriteBatch.End();
+    }
+
     base.Draw(gameTime);
   }
 }
