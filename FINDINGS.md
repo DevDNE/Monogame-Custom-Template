@@ -1,50 +1,55 @@
 # Findings — Library Review from Building Sample Games
 
-Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`.
+Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`. Updated 2026-04-18 (d) — **Puzzle** sample added (match-3 cascade); first real consumer of `TileMap` + `TileLayer<T>`. Surfaced a SpriteFont charset footgun (§1.10).
 
 ## Context
 
-The framework has been exercised by three sample games in deliberately different genres:
+The framework has been exercised by four sample games in deliberately different genres:
 
 1. **`MonoGame.GameFramework.BattleGrid`** — real-time grid duel inspired by Mega Man Battle Network. 3×3 grid per side, WASD movement, space-bar buster, Tab-triggered chip selection from a pool of four (Cannon / Wide Shot / Sword / Recov), enemy AI alternating between movement and two attack patterns, HP bars + controls hint HUD.
 2. **`MonoGame.GameFramework.Platformer`** — side-scrolling platformer with gravity, AABB collision, camera follow, a patrolling enemy, goal + win state, and a title screen.
 3. **`MonoGame.GameFramework.Shooter`** — top-down twin-stick arena survival. Free WASD movement in a 2400×1600 arena, mouse-aim firing with a 0.15 s cooldown, pursuit-AI enemies spawning in pairs every 1.5 s, score + HP HUD, game-over + R-to-restart.
+4. **`MonoGame.GameFramework.Puzzle`** — match-3 gem board. 7×7 grid of colored gems, click two adjacent cells to swap, matches of 3+ in a row or column clear with gravity-pack and refill cascades, score counter, R to reshuffle.
 
-Two more (Puzzle, Roguelike) are planned; their sections will be added as they ship.
+One more (Roguelike) is planned; its section will be added when it ships.
 
 ---
 
 ## Library surface coverage
 
-**Validated by all three games:**
+**Validated by all four games:**
 - `Input.KeyboardManager`, `Input.MouseManager`
-- `Rendering.Primitives` (`Initialize` + `Pixel` + `DrawRectangle`) — universal pattern for colored rectangles
-- `Rendering.SpriteSheet.Static` + `SpriteSheet.Tint` — used for buttons and as sprite wrappers around the pixel
-- `Rendering.DrawManager` — BattleGrid + Platformer for world draws; Shooter bypasses it entirely and draws pool-managed entities directly
+- `Rendering.Primitives` — universal pattern for colored rectangles
+- `Rendering.SpriteSheet.Static` + `SpriteSheet.Tint` — title buttons in all four
 - `Lifecycle.GameState` + `Lifecycle.GameStateManager` (auto-lifecycle)
 - `UI.UIManager` — hit-testing + `OnClick` + `HoveredElement` for title buttons
 
+**Validated by three games:**
+- `Rendering.DrawManager` — BattleGrid + Platformer for world draws; Puzzle + Shooter bypass it and draw directly. Split evenly, suggests `DrawManager` is optional rather than essential.
+
 **Validated by two games:**
-- `Rendering.Camera2D` — Platformer (side-scrolling follow) + Shooter (twin-stick follow with `ScreenToWorld` for mouse aim). Two different use-cases both satisfied.
+- `Rendering.Camera2D` — Platformer (side-scrolling follow) + Shooter (twin-stick follow + `ScreenToWorld` for mouse aim).
+- `Rendering.TileMap` + `TileLayer<T>` — Puzzle (first real consumer, 7×7 `TileLayer<Gem>`); expected in Roguelike. See §1.9.
 
 **Validated by one game:**
 - Shooter: `Pooling.ObjectPool<T>` (both Projectile and Enemy), `Timing.TimerManager.Every`, `Camera2D.ScreenToWorld`
-- BattleGrid: `Events.EventManager` (string API), `Lifecycle.SceneManager`, `Persistence.SettingsManager`, `Text.TextManager` (only the tilde-console log; HP moved to the HUD), `Input.GamePadManager`
+- Puzzle: `TileMap.WorldToCell` (mouse-pick), `TileMap.GetCellRect` (rendering), cached `TileLayer<T>` reference
+- BattleGrid: `Events.EventManager` (string API), `Lifecycle.SceneManager`, `Persistence.SettingsManager`, `Text.TextManager` (tilde-console log), `Input.GamePadManager`
 - Platformer: `Camera2D.FollowLerp` with snap-on-respawn
 
-**Not used by any game (still speculative):**
-- `Audio.SoundManager`
-- `Content.AssetCatalog`
+**Not used by any game (still speculative after 4):**
+- `Audio.SoundManager` — not a single game has played a sound
+- `Content.AssetCatalog` — no game has >1 content asset
 - `Debugging.ILogger` / `ConsoleLogger` / `PerformanceMonitor`
 - `Persistence.SaveSystem` / `SaveFile<T>`
-- `Rendering.TileMap` / `TileLayer<T>` (expected to change with puzzle/roguelike)
-- `Tween.Tween<T>` / `Easing`
-- `Utilities.MathUtilities` (Shooter chose to use `Vector2.Normalize` + `Math.Clamp` directly instead; see §1.6 below)
-- `Events.EventManager` typed API (`Subscribe<T>`/`Publish<T>`)
-- `Timing.Timer` (only `TimerManager.Every` is used; `Timer` itself still unused)
-- `Core.Entity` abstract class — Shooter joined Platformer in skipping it; BattleGrid is now the only subscriber. See §4.3.
+- `Tween.Tween<T>` / `Easing` — Puzzle's gem-fall animation would be the obvious customer but was skipped for MVP scope
+- `Utilities.MathUtilities` — consumers reach for `Vector2.Normalize` / `Math.Clamp` / `System.Random` directly
+- `Events.EventManager` typed API (`Subscribe<T>`/`Publish<T>`) — string API handles all four games' event sets
+- `Timing.Timer` (raw class) — only `TimerManager.Every` is used
+- `Core.Entity` — 3 of 4 games skip it; BattleGrid is the only subscriber. See §4.3.
+- `SpriteSheet.Animated` — four games, zero consumers. Strong deletion candidate.
 
-That unused surface is still roughly 30% of the public API after three games. Two expected to move into "validated" after puzzle/roguelike: `TileMap`/`TileLayer`. The rest are candidates for deletion if two more games still don't touch them.
+After four games the unused set is ~10 primitives. Roguelike will touch `TileMap` but most of the rest won't move. Deletion candidates list in §6.
 
 ---
 
@@ -117,6 +122,33 @@ That block appears twice in Shooter's `PlayState` already. Any game with more en
 Shooter's enemy spawn uses `_timers.Every(1.5f, SpawnWave)` — exactly the shape the API was designed for, and a genuine one-line win over a hand-rolled accumulator. Confirms that `TimerManager` as-is is valuable *when* the pattern is "fire callback every N seconds", even if BattleGrid's per-frame countdowns don't fit.
 
 (BattleGrid's four hand-rolled float counters from §5 still argue for a separate simpler API — the two styles serve different needs. Recommend keeping `TimerManager.Every`/`After` and adding a `CountdownTimer` struct that wraps `float remaining; bool Tick(dt)` for the common case.)
+
+### 1.9 `TileMap` + `TileLayer<T>` handle match-3 well; a few sharp edges (NEW 2026-04-18d)
+Puzzle's `Board` is the first real `TileMap` consumer. Verdict: the core API holds up, but there are sharp edges.
+
+**What worked:**
+- `TileLayer<Gem>` with a color-enum cell type is exactly the shape puzzle wanted. No wrapper needed.
+- `Map.GetCellRect(c, r)` for rendering and `Map.WorldToCell(mousePos)` for click-pick are ergonomic both directions. Zero friction for the 80% case.
+- `TileLayer.InBounds(c, r)` reads naturally in guard clauses.
+- `Map.Origin` cleanly offsets the whole board to arbitrary screen coordinates without forcing a wrapper class.
+
+**Sharp edges:**
+- `Gems[c, r]` via a cached `TileLayer<Gem>` reference is what you want; `Map.GetLayer<Gem>("gems")[c, r]` is verbose. The usage pattern (cache once in ctor) isn't obvious — document it.
+- `WorldToCell` returns a `(int, int)` tuple and doesn't clamp. Negative values and out-of-bounds come back silently. Puzzle added the bounds check itself. A `TryWorldToCell(Vector2, out int col, out int row)` that returns `bool` would be safer.
+- Swap-two-cells is one of the most common grid ops; Puzzle hand-rolled a tuple-deconstructed swap. `TileLayer<T>.Swap((c,r), (c,r))` is a 3-line helper.
+
+**Recommendation**: add `TileLayer.Swap`, `TileMap.TryWorldToCell`, and a CLAUDE.md note about caching the `GetLayer<T>` reference. Very low-effort, all backward-compatible.
+
+### 1.10 SpriteFont default charset is a footgun for user-facing strings (NEW 2026-04-18d)
+Every sample's content pipeline declares the Arial spritefont with `CharacterRegion Start=U+0020 End=U+007E` (ASCII printable). Any drawn string containing a character outside that range — em-dash `—`, curly quotes, non-breaking space, accented letters, anything pasted from a designer — crashes `SpriteFont.MeasureString` with `ArgumentException: Text contains characters that cannot be resolved by this SpriteFont.`
+
+Puzzle hit this when a non-matching swap showed "No match — reverted" (the em-dash silently made it into the source from editor autocorrection or paste). One-character ASCII fix, but the defensive surface is real: every developer writing flavor text is one copy-paste away from a runtime crash on a rarely-visited UI path.
+
+**Two workable library responses:**
+1. **Widen the default spritefont charset** to include U+0020..U+00FF (Latin-1 supplement) plus common typographic punctuation (en-dash, em-dash, curly quotes, ellipsis). Template the Content.mgcb + spritefont when a new game is scaffolded. Catches 95% of paste-from-anywhere failures at the font-build step, not at runtime.
+2. **Add a safe-draw helper** in `Text.TextManager` / a `Text.SafeFont` wrapper: `Measure`/`Draw` filter unknown glyphs down to `?` or a DefaultCharacter instead of throwing. Quieter failure mode for the remaining 5%.
+
+Both are worth doing; (1) has higher leverage. Worth flagging in CLAUDE.md regardless, as a "things that will bite you" note.
 
 ### 1.8 `Camera2D.ScreenToWorld` is ergonomic for mouse-aim (NEW 2026-04-18c)
 Shooter's aim direction needed three lines end-to-end:
@@ -227,7 +259,7 @@ Some library code was written speculatively and hasn't earned its place yet. Not
 |---|---|---|
 | `ObjectPool<T>` | **Validated in Shooter** | Both Projectile and Enemy run through pools with prewarm + onReturn. Handled load fine. Surrounding boilerplate is the new finding — see §1.6. |
 | `Timer` / `TimerManager` | **Partially validated in Shooter** | `TimerManager.Every` fits enemy spawn waves perfectly (§1.7). Raw `Timer` class still unused. BattleGrid's four hand-rolled countdowns still argue for a simpler `CountdownTimer` shape. |
-| `Tween<T>` / `Easing` | Unused | BattleGrid's sword-flash alpha fade would be a natural customer (currently a binary on/off). Any UI polish pass would use this. |
+| `Tween<T>` / `Easing` | Unused after 4 games | BattleGrid's sword-flash alpha and Puzzle's gem-fall animation are the obvious customers; both skipped for MVP scope. If the first polish pass on either doesn't reach for Tween, delete it. |
 | `SaveSystem` / `SaveFile` | Unused | First persistent progress |
 | `TileMap` / `TileLayer` | Unused | BattleGrid hand-rolls a 3×3×2 grid via two `SpriteSheet[,]` arrays plus `Grid.cs` helpers. Platformer hand-rolls a `List<Platform>`. Both would fit `TileMap`/`TileLayer` almost perfectly — the only reason neither uses it is inertia. |
 | `AssetCatalog` | Unused | Any game with ≥ 10 content entries. Both samples are down to one asset each (the font). |
@@ -289,3 +321,12 @@ Deferred — wait for a trigger:
 - **Entity base class's lack of validation deepened.** Shooter is the second game to skip `Core.Entity`, with a materially different entity shape optimized for pooling (§4.3). A third skip would make deletion clearly the right call.
 - **HP-bar HUD is a repeating pattern.** BattleGrid and Shooter both hand-roll the same 4-rectangle bar (background, fill, 4 border strips). Two datapoints is starting to look like a library helper.
 - **Title/Play state split is a shared skeleton across all 3 games.** The copy-paste between title states is ~80% identical. A `TitleState` base class in the library with virtual `Draw`/button-config hook would eliminate it — but only if the 4th and 5th games also follow this pattern.
+
+### Updated after Puzzle (2026-04-18d)
+
+- **`Core.Entity` deletion is now the obvious call.** 3 of 4 games skip it. Puzzle didn't even need to skip it consciously — grid cells aren't entities. Holding the class gives zero value and costs one naming decision ("is this an Entity or a plain class?") for every new game.
+- **`TileMap` / `TileLayer` is a validated primitive.** Puzzle's `Board` is 200 lines on top of it and reads cleanly. The three sharp edges (§1.9) are the natural backlog.
+- **`TitleState` copy-paste is now 4 games deep.** Roughly 80 lines duplicated per game, zero variation beyond button labels and background color. Clear candidate for a library `TitleState<TPlay>` base class or a `MenuBuilder` helper. Will decide in §8 after Roguelike.
+- **SpriteFont charset footgun (§1.10) is the first library-level safety issue.** Any game shipped to real users would hit it. Fixing this in the sample-game template is cheap; fixing it properly in the library needs a small decision (widen font, or add safe-draw). Priority bumped to "do this before the next game if possible".
+- **Four games, zero uses of `SoundManager`, `AssetCatalog`, `SaveSystem`, typed events, `MathUtilities`, raw `Timer`, `PerformanceMonitor`, `SpriteSheet.Animated`.** That's roughly a third of the library that has yet to justify its existence. §8 should make delete-or-keep recommendations on each.
+- **`DrawManager` is validated but not essential.** Puzzle and Shooter skipped it and drew entities directly. Either pattern works; the library doesn't force it. That's the right shape.
