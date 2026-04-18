@@ -1,29 +1,33 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.Graphics;
 using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
+
 public class Projectile : Entity
 {
+  private const int ProjectileWidth = 24;
+  private const int ProjectileHeight = 10;
+
   private SpriteSheet sprite;
   private Rectangle hurtbox;
   private Vector2 velocity;
   private readonly DrawManager drawManager;
-  public Projectile(DrawManager _drawManager, Vector2 _position, Vector2 _velocity, SpriteSheet _sprite)
+
+  public Projectile(DrawManager drawManager, Vector2 position, Vector2 velocity)
   {
-    velocity = _velocity;
-    drawManager = _drawManager;
-    sprite = _sprite;
-    sprite.Position = _position;
-    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
+    this.drawManager = drawManager;
+    this.velocity = velocity;
+    sprite = SpriteSheet.Static(
+      Primitives.Pixel,
+      new Rectangle((int)position.X, (int)position.Y, ProjectileWidth, ProjectileHeight),
+      name: "Projectile");
+    sprite.Tint = new Color(255, 230, 100);
+    hurtbox = new Rectangle((int)position.X, (int)position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
-  public override void LoadContent(ContentManager content)
-  {
-    drawManager.AddSprite(sprite);
-  }
+  public override void LoadContent(ContentManager content) { }
 
   public override void UnloadContent()
   {
@@ -37,24 +41,11 @@ public class Projectile : Entity
   public override void Update(GameTime gameTime)
   {
     sprite.Position += velocity;
-    sprite.DestinationFrame = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, 30, 60);
+    sprite.DestinationFrame = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, ProjectileWidth, ProjectileHeight);
     hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
-  public SpriteSheet GetSprite() {
-    return sprite;
-  }
-
-  public void SetDestinationFrame(Rectangle desitnationFrame) {
-    sprite.DestinationFrame = desitnationFrame;
-  }
-
-  public Rectangle GetHurtbox() {
-    return hurtbox;
-  }
-
-  public int GetDamageNumber()
-  {
-    return BattleConfig.ProjectileDamage;
-  }
+  public SpriteSheet GetSprite() => sprite;
+  public Rectangle GetHurtbox() => hurtbox;
+  public int GetDamageNumber() => BattleConfig.ProjectileDamage;
 }

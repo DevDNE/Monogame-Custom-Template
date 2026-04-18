@@ -1,76 +1,69 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.Graphics;
 using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
+
 public class Gameboard : Entity
 {
-  private SpriteSheet topTile;
-  private SpriteSheet midTile;
-  private SpriteSheet botTile;
-  private SpriteSheet enemyTopTile;
-  private SpriteSheet enemyMidTile;
-  private SpriteSheet enemyBotTile;
-  private DrawManager drawManager;
-  public SpriteSheet[,] boardTiles = new SpriteSheet[3, 3];
-  public SpriteSheet[,] enemyBoardTiles = new SpriteSheet[3, 3];
+  private const int TileInset = 4;
+
+  private readonly DrawManager _drawManager;
+  public SpriteSheet[,] PlayerTiles { get; } = new SpriteSheet[3, 3];
+  public SpriteSheet[,] EnemyTiles { get; } = new SpriteSheet[3, 3];
+
   public Gameboard(ServiceProvider serviceProvider)
   {
-    drawManager = serviceProvider.GetService<DrawManager>();
+    _drawManager = serviceProvider.GetService<DrawManager>();
   }
 
   public override void LoadContent(ContentManager content)
   {
-    Texture2D tileTexture = content.Load<Texture2D>("gfx/Battlefield_Tile");
-    topTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 250, 80, 48), sourceFrame: new Rectangle(0, 0, 40, 24), name: "TopTile");
-    midTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 298, 80, 48), sourceFrame: new Rectangle(48, 0, 40, 24), name: "MidTile");
-    botTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 346, 80, 52), sourceFrame: new Rectangle(96, 0, 40, 32), name: "BotTile");
-    enemyTopTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 250, 80, 48), sourceFrame: new Rectangle(0, 0, 40, 24), name: "TopTile");
-    enemyMidTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 298, 80, 48), sourceFrame: new Rectangle(48, 0, 40, 24), name: "MidTile");
-    enemyBotTile = SpriteSheet.Static(tileTexture, new Rectangle(200, 346, 80, 52), sourceFrame: new Rectangle(96, 0, 40, 32), name: "BotTile");
+    Color playerTint = new(50, 90, 170);
+    Color enemyTint = new(170, 60, 60);
 
-    for (int i = 0; i < 3; i++)
+    for (int row = 0; row < 3; row++)
     {
-      for (int j = 0; j < 3; j++)
+      for (int col = 0; col < 3; col++)
       {
-        if (i == 0)
-        {
-          boardTiles[i, j] = topTile.Clone() as SpriteSheet;
-          enemyBoardTiles[i, j] = enemyTopTile.Clone() as SpriteSheet;
-        }
-        else if (i == 1)
-        {
-          boardTiles[i, j] = midTile.Clone() as SpriteSheet;
-          enemyBoardTiles[i, j] = enemyMidTile.Clone() as SpriteSheet;
-        }
-        else
-        {
-          boardTiles[i, j] = botTile.Clone() as SpriteSheet;
-          enemyBoardTiles[i, j] = enemyBotTile.Clone() as SpriteSheet;
-        }
+        PlayerTiles[row, col] = MakeTile(
+          BattleConfig.PlayerBoardX + col * BattleConfig.TileSize,
+          BattleConfig.BoardY + row * BattleConfig.TileSize,
+          playerTint, $"playerTile_{row}_{col}");
+        _drawManager.AddSprite(PlayerTiles[row, col]);
 
-        boardTiles[i, j].Position = new Vector2(j * BattleConfig.TileSize + BattleConfig.PlayerBoardX, i * BattleConfig.TileSize + BattleConfig.BoardY);
-        boardTiles[i, j].DestinationFrame = new Rectangle((int)boardTiles[i, j].Position.X, (int)boardTiles[i, j].Position.Y, BattleConfig.TileSize, BattleConfig.TileSize);
-
-        enemyBoardTiles[i, j].Position = new Vector2(j * BattleConfig.TileSize + BattleConfig.EnemyBoardX, i * BattleConfig.TileSize + BattleConfig.BoardY);
-        enemyBoardTiles[i, j].DestinationFrame = new Rectangle((int)enemyBoardTiles[i, j].Position.X, (int)enemyBoardTiles[i, j].Position.Y, BattleConfig.TileSize, BattleConfig.TileSize);
-
-        drawManager.AddSprite(boardTiles[i, j]);
-        drawManager.AddSprite(enemyBoardTiles[i, j]);
+        EnemyTiles[row, col] = MakeTile(
+          BattleConfig.EnemyBoardX + col * BattleConfig.TileSize,
+          BattleConfig.BoardY + row * BattleConfig.TileSize,
+          enemyTint, $"enemyTile_{row}_{col}");
+        _drawManager.AddSprite(EnemyTiles[row, col]);
       }
     }
   }
 
+  private static SpriteSheet MakeTile(int x, int y, Color tint, string name)
+  {
+    SpriteSheet tile = SpriteSheet.Static(
+      Primitives.Pixel,
+      new Rectangle(x + TileInset / 2, y + TileInset / 2, BattleConfig.TileSize - TileInset, BattleConfig.TileSize - TileInset),
+      name: name);
+    tile.Tint = tint;
+    return tile;
+  }
+
   public override void UnloadContent()
   {
-    throw new System.NotImplementedException();
+    for (int row = 0; row < 3; row++)
+    {
+      for (int col = 0; col < 3; col++)
+      {
+        if (PlayerTiles[row, col] != null) _drawManager.RemoveSprite(PlayerTiles[row, col]);
+        if (EnemyTiles[row, col] != null) _drawManager.RemoveSprite(EnemyTiles[row, col]);
+      }
+    }
   }
 
-  public override void Update(GameTime gameTime)
-  {
-
-  }
+  public override void Update(GameTime gameTime) { }
 }
