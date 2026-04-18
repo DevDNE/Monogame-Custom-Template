@@ -94,6 +94,14 @@ public class Player : Entity
     _eventManager.TriggerEvent("PlayerHit", this, new GameEventArgs($"Player took {amount} damage"));
   }
 
+  public void Heal(int amount)
+  {
+    Hp += amount;
+    if (Hp > MaxHp) Hp = MaxHp;
+  }
+
+  public SpriteSheet GetCharacter() => character;
+
   private void HandleFire(GameTime gameTime)
   {
     if (_keyboardManager.WasKeyReleased(Keys.Space))

@@ -38,7 +38,6 @@ public class EnemyPlayer : Entity
   {
     _drawManager = serviceProvider.GetService<DrawManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
-    _eventManager.Subscribe("EnemyHit", OnProjectileHit);
   }
 
   public override void LoadContent(ContentManager content)
@@ -62,7 +61,6 @@ public class EnemyPlayer : Entity
     }
     foreach (Projectile p in _projectiles) p.UnloadContent();
     _projectiles.Clear();
-    _eventManager.Unsubscribe("EnemyHit", OnProjectileHit);
   }
 
   public override void Update(GameTime gameTime)
@@ -87,6 +85,13 @@ public class EnemyPlayer : Entity
         _projectiles.RemoveAt(i);
       }
     }
+  }
+
+  public void Damage(int amount)
+  {
+    Hp -= amount;
+    if (Hp < 0) Hp = 0;
+    _eventManager.TriggerEvent("EnemyHit", this, new GameEventArgs($"Enemy took {amount} damage"));
   }
 
   private void PerformNextAction()
@@ -159,11 +164,5 @@ public class EnemyPlayer : Entity
   {
     projectile.UnloadContent();
     _projectiles.Remove(projectile);
-  }
-
-  public void OnProjectileHit(object sender, GameEventArgs e)
-  {
-    Hp -= BattleConfig.ProjectileDamage;
-    if (Hp < 0) Hp = 0;
   }
 }
