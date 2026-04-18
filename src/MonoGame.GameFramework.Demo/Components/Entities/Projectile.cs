@@ -9,9 +9,6 @@ public class Projectile : Entity
 {
   private SpriteSheet sprite;
   private Rectangle hurtbox;
-  private int hurtboxWidth;
-  private int hurtboxHeight;
-  private int damageValue = 10;
   private Vector2 velocity;
   private readonly DrawManager drawManager;
   public Projectile(DrawManager _drawManager, Vector2 _position, Vector2 _velocity, SpriteSheet _sprite)
@@ -20,9 +17,7 @@ public class Projectile : Entity
     drawManager = _drawManager;
     sprite = _sprite;
     sprite.Position = _position;
-    hurtboxWidth = 38;
-    hurtboxHeight = 22;
-    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, hurtboxWidth, hurtboxHeight);
+    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
   public override void LoadContent(ContentManager content)
@@ -43,7 +38,7 @@ public class Projectile : Entity
   {
     sprite.Position += velocity;
     sprite.DestinationFrame = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, 30, 60);
-    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, hurtboxWidth, hurtboxHeight);
+    hurtbox = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
   public SpriteSheet GetSprite() {
@@ -60,6 +55,6 @@ public class Projectile : Entity
 
   public int GetDamageNumber()
   {
-    return damageValue;
+    return BattleConfig.ProjectileDamage;
   }
 }

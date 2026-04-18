@@ -14,7 +14,6 @@ namespace MonoGame.GameFramework.Demo.Components.Entities;
 
 public class Player : Entity
 {
-  public Tile CurrentTile { get; set; }
   private SpriteSheet character;
   private readonly DrawManager _drawManager;
   private PlayerHealthUI playerHealthUI;
@@ -22,14 +21,7 @@ public class Player : Entity
   private Vector2 initialPosition = new Vector2(200, 250);
   private List<Projectile> projectiles = new List<Projectile>();
   private Rectangle hitbox;
-  private int hitboxWidth = 38;
-  private int hitboxHeight = 22;
   private SpriteSheet tempProjectile;
-  private int originalWidth = 35;
-  private int originalHeight = 49;
-  private int displayedWidth = 70;
-  private int displayedHeight = 98;
-  private float frameInterval = 0.1f;
   private int currentFrame = 0;
   private bool isMoving = false;
   private int isMovingCounter = 0;
@@ -39,7 +31,7 @@ public class Player : Entity
     _drawManager = serviceProvider.GetService<DrawManager>();
     _keyboardManager = serviceProvider.GetService<KeyboardManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
-    hitbox = new Rectangle((int)initialPosition.X, (int)initialPosition.Y, hitboxWidth, hitboxHeight);
+    hitbox = new Rectangle((int)initialPosition.X, (int)initialPosition.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
     playerHealthUI = new PlayerHealthUI(serviceProvider);
   }
 
@@ -49,13 +41,13 @@ public class Player : Entity
     character = SpriteSheet.Animated(
       content.Load<Texture2D>("gfx/aquaStyle"),
       new Rectangle[] {
-        new(0, 0, originalWidth, originalHeight),
-        new(48, 0, originalWidth, originalHeight),
-        new(96, 0, originalWidth, originalHeight),
-        new(144, 0, originalWidth, originalHeight)
+        new(0, 0, BattleConfig.SourceWidth, BattleConfig.SourceHeight),
+        new(48, 0, BattleConfig.SourceWidth, BattleConfig.SourceHeight),
+        new(96, 0, BattleConfig.SourceWidth, BattleConfig.SourceHeight),
+        new(144, 0, BattleConfig.SourceWidth, BattleConfig.SourceHeight)
       },
-      new Rectangle((int)initialPosition.X, (int)initialPosition.Y, displayedWidth, displayedHeight),
-      frameInterval, name: "PlayerCharacter", startFrame: currentFrame);
+      new Rectangle((int)initialPosition.X, (int)initialPosition.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight),
+      BattleConfig.CharacterFrameInterval, name: "PlayerCharacter", startFrame: currentFrame);
 
     tempProjectile = SpriteSheet.Static(
       content.Load<Texture2D>("gfx/Player_Idle"),
@@ -109,7 +101,7 @@ public class Player : Entity
       {
         isMoving = true;
         character.Position = new Vector2(character.Position.X, character.Position.Y - 80);
-        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, displayedWidth, displayedHeight);
+        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
         character.Update(gameTime);
         _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved up"));
       }
@@ -124,7 +116,7 @@ public class Player : Entity
       {
         isMoving = true;
         character.Position = new Vector2(character.Position.X - 80, character.Position.Y);
-        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, displayedWidth, displayedHeight);
+        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
         character.Update(gameTime);
         _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved left"));
       }
@@ -139,7 +131,7 @@ public class Player : Entity
       {
         isMoving = true;
         character.Position = new Vector2(character.Position.X, character.Position.Y + 80);
-        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, displayedWidth, displayedHeight);
+        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
         character.Update(gameTime);
         _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved down"));
       }
@@ -154,7 +146,7 @@ public class Player : Entity
       {
         isMoving = true;
         character.Position = new Vector2(character.Position.X + 80, character.Position.Y);
-        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, displayedWidth, displayedHeight);
+        character.DestinationFrame = new Rectangle((int)character.Position.X, (int)character.Position.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
         character.Update(gameTime);
         _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved right"));
       }
@@ -175,7 +167,7 @@ public class Player : Entity
     for (int i = projectiles.Count - 1; i >= 0; i--)
       {
         projectiles[i].Update(gameTime);
-        if (projectiles[i].GetHurtbox().X > 1000 || projectiles[i].GetHurtbox().X < 0)
+        if (projectiles[i].GetHurtbox().X > BattleConfig.ProjectileOffscreenMaxX || projectiles[i].GetHurtbox().X < 0)
         {
           _drawManager.RemoveSprite(projectiles[i].GetSprite());
           projectiles.RemoveAt(i);

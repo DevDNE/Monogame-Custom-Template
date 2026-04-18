@@ -15,17 +15,11 @@ public class Gameboard : Entity
   private SpriteSheet enemyMidTile;
   private SpriteSheet enemyBotTile;
   private DrawManager drawManager;
-  private Tile[,] tiles;
   public SpriteSheet[,] boardTiles = new SpriteSheet[3, 3];
   public SpriteSheet[,] enemyBoardTiles = new SpriteSheet[3, 3];
-  int tileSize = 80;
-  int xOffset = 115;
-  int yOffset = 200;
-  int enemyXOffset = 400;
   public Gameboard(ServiceProvider serviceProvider)
   {
     drawManager = serviceProvider.GetService<DrawManager>();
-    tiles = new Tile[6, 3];
   }
 
   public override void LoadContent(ContentManager content)
@@ -58,11 +52,11 @@ public class Gameboard : Entity
           enemyBoardTiles[i, j] = enemyBotTile.Clone() as SpriteSheet;
         }
 
-        boardTiles[i, j].Position = new Vector2(j * tileSize + xOffset, i * tileSize + yOffset);
-        boardTiles[i, j].DestinationFrame = new Rectangle((int)boardTiles[i, j].Position.X, (int)boardTiles[i, j].Position.Y, tileSize, tileSize);
+        boardTiles[i, j].Position = new Vector2(j * BattleConfig.TileSize + BattleConfig.PlayerBoardX, i * BattleConfig.TileSize + BattleConfig.BoardY);
+        boardTiles[i, j].DestinationFrame = new Rectangle((int)boardTiles[i, j].Position.X, (int)boardTiles[i, j].Position.Y, BattleConfig.TileSize, BattleConfig.TileSize);
 
-        enemyBoardTiles[i, j].Position = new Vector2(j * tileSize + enemyXOffset, i * tileSize + yOffset);
-        enemyBoardTiles[i, j].DestinationFrame = new Rectangle((int)enemyBoardTiles[i, j].Position.X, (int)enemyBoardTiles[i, j].Position.Y, tileSize, tileSize);
+        enemyBoardTiles[i, j].Position = new Vector2(j * BattleConfig.TileSize + BattleConfig.EnemyBoardX, i * BattleConfig.TileSize + BattleConfig.BoardY);
+        enemyBoardTiles[i, j].DestinationFrame = new Rectangle((int)enemyBoardTiles[i, j].Position.X, (int)enemyBoardTiles[i, j].Position.Y, BattleConfig.TileSize, BattleConfig.TileSize);
 
         drawManager.AddSprite(boardTiles[i, j]);
         drawManager.AddSprite(enemyBoardTiles[i, j]);
