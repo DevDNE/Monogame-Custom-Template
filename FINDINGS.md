@@ -172,7 +172,9 @@ Puzzle hit this when a non-matching swap showed "No match — reverted" (the em-
 
 Both are worth doing; (1) has higher leverage. Worth flagging in CLAUDE.md regardless, as a "things that will bite you" note.
 
-> **✅ Fixed 2026-04-18 (post-AutoBattler)**. Rhythm's title screen hit the same class of bug with a second em-dash, which prompted executing Tier A item #1 from §8. All 9 games' `Content/fonts/Arial.spritefont` now declare five `CharacterRegion` blocks covering U+0020..U+007E (ASCII), U+00A0..U+00FF (Latin-1 Supplement), U+2013..U+2014 (en/em-dash), U+2018..U+201D (curly quotes), U+2026 (ellipsis), and U+2022 (bullet). Rhythm's "4-lane rhythm — hit notes..." and AutoBattler's "Round {n} — COMBAT" text now render correctly without string edits. Cross-build smoke-tested clean on all 9 sample games.
+> **✅ Fixed 2026-04-18 (post-AutoBattler)**. Rhythm's title screen hit the same class of bug with a second em-dash, which prompted executing Tier A item #1 from §8. All 9 games' `Content/fonts/Arial.spritefont` now declare seven `CharacterRegion` blocks covering U+0020..U+007E (ASCII), U+00A0..U+00FF (Latin-1 Supplement), U+2013..U+2014 (en/em-dash), U+2018..U+201D (curly quotes), U+2022 (bullet), and U+2026 (ellipsis). Rhythm's "4-lane rhythm — hit notes..." and AutoBattler's "Round {n} — COMBAT" text now render correctly without string edits.
+>
+> **Gotcha caught while fixing this (NEW 2026-04-18, §1.15)**: MonoGame's content pipeline incremental cache will silently skip rebuilding a spritefont `.xnb` when the source `.spritefont` XML changes shape but preserves the expected schema. `dotnet build` reports success without a `Building Font …` log line, and the cached `.xnb` continues to only rasterize the old charset. First attempt at this fix shipped, built green, and still crashed at runtime for exactly that reason. Workaround: delete `Content/bin` and `Content/obj` in each game before rebuilding. Longer-term: flag this in CLAUDE.md, or add a `dotnet build /t:Rebuild` note to the project readme.
 
 ### 1.8 `Camera2D.ScreenToWorld` is ergonomic for mouse-aim (NEW 2026-04-18c)
 Shooter's aim direction needed three lines end-to-end:
