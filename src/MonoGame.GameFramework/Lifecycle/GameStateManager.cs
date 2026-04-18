@@ -6,18 +6,31 @@ namespace MonoGame.GameFramework.Lifecycle;
 public class GameStateManager
 {
   private Stack<GameState> stateStack = new Stack<GameState>();
-  public void ChangeState(GameState newState)
-  {
-    stateStack.Pop();
-    stateStack.Push(newState);
-  }
-  public void PopState()
-  {
-    stateStack.Pop();
-  }
+
   public void PushState(GameState newState)
   {
+    if (stateStack.Count > 0) stateStack.Peek().Obscuring();
     stateStack.Push(newState);
+    newState.Entered();
+  }
+
+  public void PopState()
+  {
+    if (stateStack.Count == 0) return;
+    GameState popped = stateStack.Pop();
+    popped.Leaving();
+    if (stateStack.Count > 0) stateStack.Peek().Revealed();
+  }
+
+  public void ChangeState(GameState newState)
+  {
+    if (stateStack.Count > 0)
+    {
+      GameState old = stateStack.Pop();
+      old.Leaving();
+    }
+    stateStack.Push(newState);
+    newState.Entered();
   }
 
   public GameState PeekState()

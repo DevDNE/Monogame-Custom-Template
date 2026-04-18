@@ -57,16 +57,10 @@ public class Game1 : Game
     PlayState playState = new(_serviceProvider, _pixel, _font, ViewportWidth, ViewportHeight);
     TitleState titleState = new(
       _serviceProvider, _pixel, _font, ViewportWidth, ViewportHeight,
-      onPlay: () =>
-      {
-        _gameStateManager.PeekState().Leaving();
-        _gameStateManager.ChangeState(playState);
-        _gameStateManager.PeekState().Entered();
-      },
+      onPlay: () => _gameStateManager.ChangeState(playState),
       onQuit: Exit);
 
     _gameStateManager.PushState(titleState);
-    _gameStateManager.PeekState().Entered();
   }
 
   protected override void Update(GameTime gameTime)

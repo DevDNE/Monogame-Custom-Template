@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
 using System.Linq;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Lifecycle;
@@ -37,6 +36,12 @@ public class BattleState : GameState
     _sceneManager.AddScene("InitialScene", _battleScene);
     _sceneManager.LoadScene("InitialScene");
     IsActive = true;
+
+    if (_settingsManager.DebugMode)
+    {
+      debugState = new DebugState(_graphicsDevice, _serviceProvider);
+      _gameStateManager.PushState(debugState);
+    }
   }
 
   public override void Leaving()
@@ -52,13 +57,6 @@ public class BattleState : GameState
   public override void Revealed()
   {
     IsActive = true;
-    if (_settingsManager.DebugMode) {
-      debugState = new DebugState(_graphicsDevice, _serviceProvider);
-      Console.WriteLine(_gameStateManager.PeekState());
-      _gameStateManager.PushState(debugState);
-      Console.WriteLine(_gameStateManager.PeekState());
-      _gameStateManager.PeekState().Entered();
-    }
   }
 
   public override void Update(GameTime gameTime)

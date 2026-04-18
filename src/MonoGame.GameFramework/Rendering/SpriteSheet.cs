@@ -14,6 +14,7 @@ public class SpriteSheet
   public Rectangle DestinationFrame { get; set; }
   public float FrameInterval { get; init; }
   public int CurrentFrame { get; set; }
+  public Color Tint { get; set; } = Color.White;
   private float elapsedTime;
 
   public static SpriteSheet Static(Texture2D texture, Rectangle destinationFrame, Rectangle? sourceFrame = null, string name = null)

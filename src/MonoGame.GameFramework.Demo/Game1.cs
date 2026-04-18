@@ -69,8 +69,6 @@ public class Game1 : Game
         _textManager.LoadContent(Content.Load<SpriteFont>("fonts/Arial"));
         _soundManager.LoadContent(Content);
         _sceneManager.LoadContent(Content);
-        _gameStateManager.PeekState().Entered();
-        _gameStateManager.PeekState().Revealed();
     }
 
     protected override void Update(GameTime gameTime)

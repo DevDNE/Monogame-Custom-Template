@@ -10,10 +10,12 @@ public class PlayerHealthUI
 {
   private SpriteSheet _healthBar;
   private UIManager _uiManager;
+  private DrawManager _drawManager;
 
   public PlayerHealthUI(ServiceProvider serviceProvider)
   {
     _uiManager = serviceProvider.GetService<UIManager>();
+    _drawManager = serviceProvider.GetService<DrawManager>();
   }
 
   public void LoadContent(ContentManager content)
@@ -24,12 +26,14 @@ public class PlayerHealthUI
       sourceFrame: new Rectangle(0, 0, 35, 40),
       name: "projectileSprite");
     _uiManager.AddUIElement("player", _healthBar);
+    _drawManager.AddSprite(_healthBar);
   }
 
   public void UnloadContent()
   {
     if (_healthBar != null)
     {
+      _drawManager.RemoveSprite(_healthBar);
       _uiManager.RemoveUIElement("player", _healthBar);
       _healthBar = null;
     }

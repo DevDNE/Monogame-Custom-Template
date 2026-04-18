@@ -11,6 +11,7 @@ namespace MonoGame.GameFramework.Demo.Components.UI;
 public class ConsoleUI
 {
   private UIManager _uiManager;
+  private DrawManager _drawManager;
   private TextManager _textManager;
   private SettingsManager _settingsManager;
   private Texture2D backgroundTexture;
@@ -22,6 +23,7 @@ public class ConsoleUI
   public ConsoleUI(GraphicsDevice graphicsDevice, ServiceProvider serviceProvider)
   {
     _uiManager = serviceProvider.GetService<UIManager>();
+    _drawManager = serviceProvider.GetService<DrawManager>();
     _textManager = serviceProvider.GetService<TextManager>();
     _settingsManager = serviceProvider.GetService<SettingsManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
@@ -33,6 +35,7 @@ public class ConsoleUI
 
     consoleSpriteSheet = SpriteSheet.Static(backgroundTexture, backgroundRectangle, sourceFrame: backgroundRectangle, name: "console");
     _uiManager.AddUIElement("console", consoleSpriteSheet);
+    _drawManager.AddSprite(consoleSpriteSheet);
 
     _eventManager.Subscribe("toggleConsole", ToggleConsole);
   }
@@ -45,6 +48,7 @@ public class ConsoleUI
       backgroundTexture.Dispose();
       backgroundTexture = null;
     }
+    _drawManager.RemoveSprite(consoleSpriteSheet);
     _uiManager.RemoveUIElement("console", consoleSpriteSheet);
     backgroundTexture = null;
   }

@@ -7,7 +7,6 @@ using MonoGame.GameFramework.Rendering;
 namespace MonoGame.GameFramework.UI;
 public class UIManager
 {
-  private readonly DrawManager _drawManager;
   private readonly MouseManager _mouseManager;
   private readonly Dictionary<string, List<SpriteSheet>> uiGroups = new();
   private readonly Dictionary<SpriteSheet, Action> clickHandlers = new();
@@ -15,9 +14,8 @@ public class UIManager
   public SpriteSheet FocusedElement { get; private set; }
   public SpriteSheet HoveredElement { get; private set; }
 
-  public UIManager(DrawManager drawManager, MouseManager mouseManager)
+  public UIManager(MouseManager mouseManager)
   {
-    _drawManager = drawManager;
     _mouseManager = mouseManager;
   }
 
@@ -28,7 +26,6 @@ public class UIManager
       uiGroups[group] = new List<SpriteSheet>();
     }
     uiGroups[group].Add(uiElement);
-    _drawManager.AddSprite(uiElement);
   }
 
   public void RemoveUIElement(string group, SpriteSheet uiElement)
@@ -36,7 +33,6 @@ public class UIManager
     if (uiGroups.TryGetValue(group, out List<SpriteSheet> list))
     {
       list.Remove(uiElement);
-      _drawManager.RemoveSprite(uiElement);
     }
     clickHandlers.Remove(uiElement);
     if (FocusedElement == uiElement) FocusedElement = null;

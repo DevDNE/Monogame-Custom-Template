@@ -70,6 +70,17 @@ The library is organized into 15 domain folders, each with a matching namespace.
 **SpriteSheet construction**: use the factories, not the old 8-arg ctor.
 - `SpriteSheet.Static(texture, destinationFrame, sourceFrame: ..., name: ...)` — single-frame.
 - `SpriteSheet.Animated(texture, frames, destinationFrame, frameInterval, name: ..., startFrame: ...)` — multi-frame.
+- `SpriteSheet.Tint` is mutable (defaults to `Color.White`); `DrawManager` respects it, so runtime tint/flash/fade works without replacing the sprite.
+
+**Pixel texture**: call `Rendering.Primitives.Initialize(GraphicsDevice)` once in `Game1.LoadContent`, then use `Primitives.Pixel` or `Primitives.DrawRectangle(spriteBatch, rect, color)` anywhere a solid-color rectangle is needed. Avoids re-creating 1×1 textures in every entity.
+
+**GameStateManager lifecycle**: `PushState`, `PopState`, and `ChangeState` automatically call the right hooks — `Entered`, `Leaving`, `Obscuring`, `Revealed`. Consumers should not invoke these manually after a transition. Initial push fires `Entered` only (nothing to reveal from).
+
+**Text rendering** — the library offers two paths, by design:
+- **`Text.TextManager`** — handle-based, batched text with group management (`ClearGroup`, `ScrollText`). Use for HUD text that persists frame-to-frame: score counters, chat logs, status labels. The tactical demo's enemy HP counter and console overlay use this.
+- **Direct `SpriteBatch.DrawString(font, ...)`** — one-off labels drawn inline in a `GameState.Draw` override. Use for title screens, win/lose banners, button labels, anything whose position is computed per-frame. The platformer's "You Win!" overlay and title buttons use this.
+
+Rule of thumb: if you'd register it and mutate occasionally, use `TextManager`. If you'd recompute position every frame, use `DrawString`.
 
 ### Demo (`MonoGame.GameFramework.Demo`)
 
