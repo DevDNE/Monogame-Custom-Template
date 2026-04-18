@@ -13,15 +13,17 @@ namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 public class Player : Entity
 {
   public const int MaxHp = 100;
+
   public int Hp { get; private set; } = MaxHp;
   public bool IsAlive => Hp > 0;
+  public int GridCol { get; private set; } = 1;
+  public int GridRow { get; private set; } = 1;
 
   private SpriteSheet character;
   private readonly DrawManager _drawManager;
   private readonly KeyboardManager _keyboardManager;
   private readonly EventManager _eventManager;
 
-  private Vector2 initialPosition = new Vector2(200, 250);
   private List<Projectile> projectiles = new List<Projectile>();
   private Rectangle hitbox;
 
@@ -30,16 +32,17 @@ public class Player : Entity
     _drawManager = serviceProvider.GetService<DrawManager>();
     _keyboardManager = serviceProvider.GetService<KeyboardManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
-    hitbox = new Rectangle((int)initialPosition.X, (int)initialPosition.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
   public override void LoadContent(ContentManager content)
   {
+    Vector2 pos = BattleGrid.Grid.PlayerCellTopLeft(GridCol, GridRow);
     character = SpriteSheet.Static(
       Primitives.Pixel,
-      new Rectangle((int)initialPosition.X, (int)initialPosition.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight),
+      new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight),
       name: "Player");
     character.Tint = new Color(80, 180, 255);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
     _drawManager.AddSprite(character);
   }
 
@@ -57,11 +60,31 @@ public class Player : Entity
   public override void Update(GameTime gameTime)
   {
     if (!IsAlive) return;
-    CheckMovingUp();
-    CheckMovingLeft();
-    CheckMovingDown();
-    CheckMovingRight();
-    CheckFiredProjectile(gameTime);
+    HandleMove(Keys.W, 0, -1, "up");
+    HandleMove(Keys.S, 0, 1, "down");
+    HandleMove(Keys.A, -1, 0, "left");
+    HandleMove(Keys.D, 1, 0, "right");
+    HandleFire(gameTime);
+  }
+
+  private void HandleMove(Keys key, int dCol, int dRow, string label)
+  {
+    if (!_keyboardManager.WasKeyReleased(key)) return;
+    int nc = GridCol + dCol;
+    int nr = GridRow + dRow;
+    if (nc < 0 || nc > 2 || nr < 0 || nr > 2) return;
+    GridCol = nc;
+    GridRow = nr;
+    RefreshFromGrid();
+    _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs($"Player moved {label}"));
+  }
+
+  private void RefreshFromGrid()
+  {
+    Vector2 pos = BattleGrid.Grid.PlayerCellTopLeft(GridCol, GridRow);
+    character.Position = pos;
+    character.DestinationFrame = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
+    hitbox = new Rectangle((int)pos.X, (int)pos.Y, BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
   }
 
   public void Damage(int amount)
@@ -71,67 +94,20 @@ public class Player : Entity
     _eventManager.TriggerEvent("PlayerHit", this, new GameEventArgs($"Player took {amount} damage"));
   }
 
-  private void CheckMovingUp()
-  {
-    if (_keyboardManager.WasKeyReleased(Keys.W) && character.Position.Y > 200)
-    {
-      character.Position = new Vector2(character.Position.X, character.Position.Y - BattleConfig.TileSize);
-      RefreshDestination();
-      _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved up"));
-    }
-  }
-
-  private void CheckMovingLeft()
-  {
-    if (_keyboardManager.WasKeyReleased(Keys.A) && character.Position.X > 150)
-    {
-      character.Position = new Vector2(character.Position.X - BattleConfig.TileSize, character.Position.Y);
-      RefreshDestination();
-      _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved left"));
-    }
-  }
-
-  private void CheckMovingDown()
-  {
-    if (_keyboardManager.WasKeyReleased(Keys.S) && character.Position.Y < 300)
-    {
-      character.Position = new Vector2(character.Position.X, character.Position.Y + BattleConfig.TileSize);
-      RefreshDestination();
-      _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved down"));
-    }
-  }
-
-  private void CheckMovingRight()
-  {
-    if (_keyboardManager.WasKeyReleased(Keys.D) && character.Position.X < 250)
-    {
-      character.Position = new Vector2(character.Position.X + BattleConfig.TileSize, character.Position.Y);
-      RefreshDestination();
-      _eventManager.TriggerEvent("PlayerMoved", this, new GameEventArgs("Player moved right"));
-    }
-  }
-
-  private void RefreshDestination()
-  {
-    character.DestinationFrame = new Rectangle(
-      (int)character.Position.X, (int)character.Position.Y,
-      BattleConfig.DisplayWidth, BattleConfig.DisplayHeight);
-    hitbox = new Rectangle(
-      (int)character.Position.X, (int)character.Position.Y,
-      BattleConfig.HitboxWidth, BattleConfig.HitboxHeight);
-  }
-
-  private void CheckFiredProjectile(GameTime gameTime)
+  private void HandleFire(GameTime gameTime)
   {
     if (_keyboardManager.WasKeyReleased(Keys.Space))
     {
-      FireProjectile(new Projectile(_drawManager, character.Position, new Vector2(10, 0), new Color(255, 230, 100)));
+      Vector2 spawn = new(
+        character.Position.X + BattleConfig.DisplayWidth,
+        character.Position.Y + BattleConfig.DisplayHeight * 0.5f - 5f);
+      FireProjectile(new Projectile(_drawManager, spawn, new Vector2(10, 0), new Color(255, 230, 100)));
     }
     for (int i = projectiles.Count - 1; i >= 0; i--)
     {
       projectiles[i].Update(gameTime);
-      if (projectiles[i].GetHurtbox().X > BattleConfig.ProjectileOffscreenMaxX ||
-          projectiles[i].GetHurtbox().X < 0)
+      int x = projectiles[i].GetHurtbox().X;
+      if (x > BattleConfig.ProjectileOffscreenMaxX || x < 0)
       {
         projectiles[i].UnloadContent();
         projectiles.RemoveAt(i);
