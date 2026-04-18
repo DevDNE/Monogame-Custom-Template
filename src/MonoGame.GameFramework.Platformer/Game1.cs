@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -15,7 +16,7 @@ public class Game1 : Game
   private KeyboardManager _keyboardManager;
   private Texture2D _pixel;
   private Player _player;
-  private Platform _ground;
+  private List<Platform> _platforms;
 
   public Game1(ServiceProvider serviceProvider)
   {
@@ -44,7 +45,14 @@ public class Game1 : Game
     _pixel.SetData(new[] { Color.White });
 
     _player = new Player(new Vector2(496, 60));
-    _ground = new Platform(new Rectangle(0, 500, 1024, 76));
+    _platforms = new List<Platform>
+    {
+      new(new Rectangle(0, 540, 1024, 36)),     // ground
+      new(new Rectangle(130, 420, 180, 24)),    // left floating
+      new(new Rectangle(740, 420, 180, 24)),    // right floating
+      new(new Rectangle(430, 340, 180, 24)),    // middle elevated
+      new(new Rectangle(430, 180, 180, 24)),    // ceiling over middle
+    };
   }
 
   protected override void Update(GameTime gameTime)
@@ -58,7 +66,7 @@ public class Game1 : Game
     if (_keyboardManager.IsKeyDown(Keys.D) || _keyboardManager.IsKeyDown(Keys.Right)) inputX += 1f;
     bool jumpPressed = _keyboardManager.WasKeyPressed(Keys.Space);
 
-    _player.Update(gameTime, _ground, inputX, jumpPressed);
+    _player.Update(gameTime, _platforms, inputX, jumpPressed);
     base.Update(gameTime);
   }
 
@@ -66,7 +74,7 @@ public class Game1 : Game
   {
     GraphicsDevice.Clear(new Color(20, 24, 40));
     _spriteBatch.Begin();
-    _ground.Draw(_spriteBatch, _pixel);
+    foreach (Platform p in _platforms) p.Draw(_spriteBatch, _pixel);
     _player.Draw(_spriteBatch, _pixel);
     _spriteBatch.End();
     base.Draw(gameTime);

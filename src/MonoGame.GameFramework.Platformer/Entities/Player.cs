@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -36,30 +37,63 @@ public class Player
     IsGrounded = false;
   }
 
-  public void Update(GameTime gameTime, Platform ground, float inputX, bool jumpPressed)
+  public void Update(GameTime gameTime, IReadOnlyList<Platform> platforms, float inputX, bool jumpPressed)
   {
     float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
     float targetVx = inputX * MoveSpeed;
     float accel = IsGrounded ? GroundAcceleration : AirAcceleration;
-    float dx = targetVx - Velocity.X;
-    float step = accel * dt;
-    float newVx = MathF.Abs(dx) <= step ? targetVx : Velocity.X + MathF.Sign(dx) * step;
+    float newVx = ApproachTarget(Velocity.X, targetVx, accel * dt);
 
     float newVy = Velocity.Y + Gravity * dt;
     if (jumpPressed && IsGrounded) newVy = JumpVelocity;
     newVy = MathHelper.Clamp(newVy, -MaxFallSpeed, MaxFallSpeed);
 
     Velocity = new Vector2(newVx, newVy);
-    Position += Velocity * dt;
 
-    IsGrounded = false;
-    if (Velocity.Y >= 0 && Bounds.Intersects(ground.Bounds))
+    MoveX(Velocity.X * dt, platforms);
+    MoveY(Velocity.Y * dt, platforms);
+  }
+
+  private void MoveX(float delta, IReadOnlyList<Platform> platforms)
+  {
+    Position = new Vector2(Position.X + delta, Position.Y);
+    foreach (Platform p in platforms)
     {
-      Position = new Vector2(Position.X, ground.Bounds.Top - Height);
-      Velocity = new Vector2(Velocity.X, 0);
-      IsGrounded = true;
+      if (!Bounds.Intersects(p.Bounds)) continue;
+      if (delta > 0)
+        Position = new Vector2(p.Bounds.Left - Width, Position.Y);
+      else if (delta < 0)
+        Position = new Vector2(p.Bounds.Right, Position.Y);
+      Velocity = new Vector2(0, Velocity.Y);
     }
+  }
+
+  private void MoveY(float delta, IReadOnlyList<Platform> platforms)
+  {
+    Position = new Vector2(Position.X, Position.Y + delta);
+    IsGrounded = false;
+    foreach (Platform p in platforms)
+    {
+      if (!Bounds.Intersects(p.Bounds)) continue;
+      if (delta > 0)
+      {
+        Position = new Vector2(Position.X, p.Bounds.Top - Height);
+        IsGrounded = true;
+      }
+      else if (delta < 0)
+      {
+        Position = new Vector2(Position.X, p.Bounds.Bottom);
+      }
+      Velocity = new Vector2(Velocity.X, 0);
+    }
+  }
+
+  private static float ApproachTarget(float current, float target, float step)
+  {
+    float diff = target - current;
+    if (MathF.Abs(diff) <= step) return target;
+    return current + MathF.Sign(diff) * step;
   }
 
   public void Draw(SpriteBatch spriteBatch, Texture2D pixel)
