@@ -1,6 +1,6 @@
 # Findings — Library Review from Building Two Sample Games
 
-Snapshot date: 2026-04-18 (updated as more games ship).
+Original snapshot: 2026-04-18. Updated 2026-04-18 — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Items deferred to game #3 remain open.
 
 ## Context
 
@@ -58,6 +58,8 @@ _gameStateManager.PeekState().Entered();
 
 **Recommendation**: `GameStateManager.PushState(state)` should call `state.Entered()`. `PopState()` should call `Leaving()` on the popped state and `Revealed()` on the new top. `ChangeState` should call both. Consumers keep the option to call them manually for exotic flows, but the default should Just Work.
 
+> **✅ Fixed 2026-04-18 (commit `702dd54`)**. `Push/Pop/ChangeState` now auto-fire `Entered`/`Leaving`/`Obscuring`/`Revealed`. Initial push on an empty stack fires `Entered` only (no `Revealed` — nothing to reveal from). Demo's `BattleState` migrated its `Revealed` debug-state push into `Entered`. Platformer's Play-click callback collapsed from four lines to one. Covered by 5 new `GameStateManagerTests`.
+
 ### 1.2 Pixel texture for colored rectangles
 Both games need a 1×1 white texture for drawing colored rectangles. Platformer uses it ubiquitously (player, platforms, enemies, goal, overlays); tactical could use it but relies on pre-made sprites. Every game creates it the same way:
 
@@ -67,6 +69,8 @@ _pixel.SetData(new[] { Color.White });
 ```
 
 **Recommendation**: `Rendering.Primitives` or similar — a lazy-initialized `PixelTexture` service keyed to the current `GraphicsDevice`, plus convenience `DrawRectangle`/`DrawLine` extension methods on `SpriteBatch`. Low effort, eliminates copy-paste.
+
+> **✅ Fixed 2026-04-18 (commit `702dd54`)**. `Rendering/Primitives.cs` provides static `Initialize(GraphicsDevice)` + `Pixel` + `DrawRectangle(spriteBatch, rect, color)`. Not yet adopted by the two sample games — each still creates its own 1×1 texture — so the helper awaits real-consumer validation. Likely low-risk adoption follow-up. No unit tests (GraphicsDevice isn't headless-friendly); smoke-tested via demo/platformer once they adopt it.
 
 ### 1.3 Screen-space vs world-space rendering
 Platformer has two draw contexts per frame: world (camera matrix) and UI (identity). The library provides `Camera2D.GetViewMatrix` but no guidance or helpers for mixed-context rendering. The tactical demo has one context because it uses no camera. Any future game with a camera will hit this.
@@ -130,10 +134,14 @@ Things that work but awkwardly. Each is a candidate for a small library fix; gro
 
 **Recommendation**: split into `UIManager` (interaction: hit-test, focus, click callbacks, hover — no coupling to drawing) and a separate optional `UIRenderer` that *can* render registered elements through DrawManager for consumers that want that. Keep the existing one-line convenience `AddUIElement(group, sprite)` as an extension method that does both.
 
+> **✅ Fixed 2026-04-18 (commit `702dd54`)**. `UIManager` constructor no longer takes `DrawManager`; `AddUIElement`/`RemoveUIElement` no longer touch it. Demo's `ConsoleUI` and `PlayerHealthUI` now call `DrawManager.AddSprite`/`RemoveSprite` explicitly alongside the UI registration — two lines instead of one, but the coupling is gone. No separate `UIRenderer` was introduced; the decoupling alone was enough. Covered by 5 new `UIManagerTests` including one that constructs `UIManager` with a null `MouseManager` to prove no `DrawManager` is required.
+
 ### 4.2 `DrawManager` renders everything white
 `DrawManager.Draw` hardcodes `Color.White` and doesn't pass through a tint. For non-white sprites this is fine (texture has the colors). For the pixel-texture pattern in §1.2, it prevents colored rectangles through `DrawManager`.
 
 **Recommendation**: when the pixel-texture utility (§1.2) lands, `SpriteSheet` should grow a `Tint` property that `DrawManager.Draw` respects, defaulting to `Color.White`.
+
+> **✅ Fixed 2026-04-18 (commit `702dd54`)**. `SpriteSheet.Tint` is a mutable `Color` property defaulting to `Color.White`; `DrawManager.Draw` uses `sprite.Tint` instead of hardcoded white. Consumers can now tint, flash, or fade sprites at runtime without replacing them. Covered by 2 new `SpriteSheetTests`.
 
 ### 4.3 `Entity` abstract class is unused in the platformer
 Platformer's `Player`/`Platform`/`Enemy`/`Goal` are plain classes, not `Entity` subclasses. Nothing in the library forces `Entity`. Using it would be ceremony: each entity takes a ContentManager in `LoadContent` (unused), an empty `UnloadContent`, and a `SpriteBatch` in `Draw` (already receiving). The tactical demo does extend `Entity` but also doesn't get much from it — the abstract methods mostly no-op.
@@ -144,6 +152,8 @@ Platformer's `Player`/`Platform`/`Enemy`/`Goal` are plain classes, not `Entity` 
 Tactical uses `Text.TextManager` (handle-based, batched). Platformer uses `SpriteBatch.DrawString` directly with a cached `SpriteFont`. Both work; neither dominates. `TextManager` is the right choice for HUD-like text that persists across frames; direct `DrawString` is right for one-off overlays ("You Win"). The library doesn't document which to pick.
 
 **Recommendation**: CLAUDE.md should have a short "text rendering" section with the two patterns and when each fits. No code change needed.
+
+> **✅ Fixed 2026-04-18 (commit `702dd54`)**. CLAUDE.md now has a "Text rendering" subsection under Architecture spelling out when to pick `TextManager` vs direct `DrawString`.
 
 ---
 
@@ -174,12 +184,15 @@ The ones I'd flag as genuinely speculative until 3 games exist: `PerformanceMoni
 
 Ordered by value-per-effort. None are urgent; pick when the trigger hits.
 
-1. **Fix `GameStateManager` lifecycle auto-calls** (§1.1). ~20 lines. Removes ceremony from every game. Do next time the library is touched.
-2. **Decouple `UIManager` from `DrawManager`** (§4.1). Split into interaction-only + optional rendering helper. ~40 lines. Do before game #3 if it has UI.
-3. **Ship the pixel-texture helper + `SpriteSheet.Tint`** (§1.2, §4.2). ~20 lines. Trivial quality-of-life win.
-4. **Start a `MonoGame.GameFramework.Platformer` genre module** once a *second* platformer is started (§2). Extract the jump feel config + controller first — that's the densest shared code.
-5. **Delete or redesign `Entity` abstract class** (§4.3). Revisit after game #3.
-6. **Document text rendering paths in CLAUDE.md** (§4.4). 10-minute edit.
+1. ✅ **Fix `GameStateManager` lifecycle auto-calls** (§1.1). ~20 lines. Removes ceremony from every game. ~~Do next time the library is touched.~~ **Done 2026-04-18.**
+2. ✅ **Decouple `UIManager` from `DrawManager`** (§4.1). Split into interaction-only + optional rendering helper. ~40 lines. ~~Do before game #3 if it has UI.~~ **Done 2026-04-18.**
+3. ✅ **Ship the pixel-texture helper + `SpriteSheet.Tint`** (§1.2, §4.2). ~20 lines. Trivial quality-of-life win. **Done 2026-04-18** — `Primitives` awaits adoption by sample games.
+4. ⏳ **Start a `MonoGame.GameFramework.Platformer` genre module** once a *second* platformer is started (§2). Extract the jump feel config + controller first — that's the densest shared code. **Deferred to game #3.**
+5. ⏳ **Delete or redesign `Entity` abstract class** (§4.3). Revisit after game #3. **Deferred to game #3.**
+6. ✅ **Document text rendering paths in CLAUDE.md** (§4.4). 10-minute edit. **Done 2026-04-18.**
+
+### Follow-up trigger after the 2026-04-18 batch
+`Rendering.Primitives` is shipped but no consumer uses it yet — each game still creates its own 1×1 pixel texture. Low-risk follow-up: adopt `Primitives.Pixel` in the platformer's `Game1`/`PlayState`/`TitleState` and in the demo's `ConsoleUI`. Validates the helper and removes ~10 lines of duplicated init. Do when you next touch either game.
 
 Deferred — wait for a trigger:
 - Input rebinding layer (Tier 3 backlog; first user friction).
@@ -196,3 +209,4 @@ Deferred — wait for a trigger:
 - **Genre modules were correctly deferred**. Building them before game #2 would have designed against imagined abstractions. The items in §2 are concrete because they came from real duplication.
 - **Over-build is visible now**. §5 lists 10+ primitives not used by either game. Some are fine ("will land soon"), some are speculative ("built because it seemed generally useful"). Honest accounting prevents the library from growing into a dumping ground.
 - **The library passed the "second consumer" test.** The platformer was built in ~9 small phases without blocking changes to the library (aside from discoveries logged here). That's the main signal that the core abstractions are OK.
+- **The findings loop works.** Four of the six §6 items were fixed in a single bundled follow-up commit (`702dd54`) with test coverage for each. The two deferred items (genre module, `Entity` redesign) are explicitly sample-of-one extractions that only game #3 can honestly validate — deferring them was correct, not procrastination.
