@@ -1,73 +1,101 @@
-# Monogame-Custom-Template
+# MonoGame.GameFramework
 
-## monogame-vscode-boilerplate
+A reusable MonoGame DesktopGL framework library with **nine sample games across nine genres** that exercise and validate it. Uses Microsoft.Extensions.DependencyInjection for wiring services. See [`FINDINGS.md`](./FINDINGS.md) for the 9-game library review that drove the current shape.
 
-Use the MonoGame C# configuration for Visual Studio Code
-See https://github.com/rewrking/monogame-vscode-boilerplate for instructions and downloads
+## Setting Up Mac Environment
 
-## Setting Up Mac Environment:
-- get both x64 and ARM .net (not optional)
-- follow this closely, you need all of the vs code extensions (on vscode):
-  - https://docs.monogame.net/articles/getting_started/1_setting_up_your_development_environment_unix.html
-- brew install freetype
-- brew install freeimage
+- Install both x64 and ARM .NET SDKs (not optional)
+- Follow the official MonoGame setup closely, including the VS Code extensions: <https://docs.monogame.net/articles/getting_started/1_setting_up_your_development_environment_unix.html>
+- `brew install freetype freeimage`
+- Symlink shims so the native libs resolve at runtime:
+  ```bash
+  # freetype — first try
+  sudo ln -s /opt/homebrew/lib/libfreetype6.dylib /usr/local/lib/libfreetype6
+  # or if that path is missing (older formula)
+  sudo ln -s /opt/homebrew/Cellar/freetype/2.13.2/lib/libfreetype.6.dylib /usr/local/lib/libfreetype6
 
-You need to make 2 files for the the 2 previous commands
-- for freetype on mac, first change: 
-  - /opt/homebrew/lib/libfreetype.6.dylib -> 
-  - /opt/homebrew/lib/libfreetype6.dylib
-  - then run
-  - sudo ln -s /opt/homebrew/lib/libfreetype6.dylib /usr/local/lib/libfreetype6
-  - or
-  - sudo ln -s /opt/homebrew/Cellar/freetype/2.13.2/lib/libfreetype.6.dylib /usr/local/lib/libfreetype6
-  - based on location
-- for freeimage on mac, run:
-  - sudo ln -s /opt/homebrew/Cellar/freeimage/3.18.0/lib/libfreeimage.dylib /usr/local/lib/libfreeimage
-- command to get editor open:
-  - dotnet mgcb-editor ./Content/Content.mgcb (doesn't seem to be working rn with arm over x64)
-- use content.mgcb, right click, and click in mgcb editor
-- launch game (for now) by right clicking project, then go to debug, then start a new instance in solution explorer
+  # freeimage
+  sudo ln -s /opt/homebrew/Cellar/freeimage/3.18.0/lib/libfreeimage.dylib /usr/local/lib/libfreeimage
+  ```
+- Open a content pipeline file: `dotnet mgcb-editor ./src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb`
+- Launch any sample via `dotnet run --project src/<project>/<project>.csproj` (see list below)
 
 ## Project Structure
 
 ```
+Game.sln
 src/
-  MonoGame.GameFramework/             ← Class library (reusable framework)
-  MonoGame.GameFramework.BattleGrid/  ← Sample game: grid-based duel
-  MonoGame.GameFramework.Platformer/  ← Sample game: side-scroller
-  MonoGame.GameFramework.Tests/       ← xUnit tests for the library
+  MonoGame.GameFramework/               ← Class library (reusable framework)
+  MonoGame.GameFramework.BattleGrid/    ← Grid-based duel (Mega Man Battle Network-style)
+  MonoGame.GameFramework.Platformer/    ← Side-scrolling platformer
+  MonoGame.GameFramework.Shooter/       ← Twin-stick arena survival
+  MonoGame.GameFramework.Puzzle/        ← Match-3 gem board
+  MonoGame.GameFramework.Roguelike/     ← Turn-based dungeon crawler
+  MonoGame.GameFramework.TowerDefense/  ← Wave-based tower defense
+  MonoGame.GameFramework.Rhythm/        ← 4-lane rhythm game
+  MonoGame.GameFramework.VisualNovel/   ← Dialogue-tree VN with save/load
+  MonoGame.GameFramework.AutoBattler/   ← Auto-chess shop + combat loop
+  MonoGame.GameFramework.Tests/         ← 122 xUnit tests
 ```
 
-### Library (`MonoGame.GameFramework`)
+## Library (`MonoGame.GameFramework`)
 
-15 domain folders, each with a matching namespace. All services are registered via `Core/ServiceCollectionExtensions.AddGameFrameworkManagers()`.
+Services are registered via `Core/ServiceCollectionExtensions.AddGameFrameworkManagers()` and resolved via DI.
 
 | Folder | Contents |
 |---|---|
 | `Audio/` | `SoundManager` |
 | `Content/` | `AssetCatalog` |
-| `Core/` | `Entity`, `ServiceCollectionExtensions` |
-| `Debugging/` | `ILogger`, `ConsoleLogger`, `PerformanceMonitor` |
-| `Events/` | `EventManager` (string-keyed + typed `Subscribe<T>`/`Publish<T>`), `GameEventArgs` |
+| `Core/` | `ServiceCollectionExtensions` |
+| `Debugging/` | `ILogger`, `ConsoleLogger`, `DebugOverlay` (tilde-toggled overlay; pause + step-frame) |
+| `Events/` | `EventManager` (string API + typed `Subscribe<T>`/`Publish<T>`), `GameEventArgs` |
 | `Input/` | `KeyboardManager`, `MouseManager`, `GamePadManager` |
-| `Lifecycle/` | `GameState` + `GameStateManager`, `GameScene` + `SceneManager` |
+| `Lifecycle/` | `GameState` + `GameStateManager`, `GameScene` + `SceneManager`, `TitleScreenState` |
 | `Persistence/` | `SaveSystem`, `SaveFile<T>`, `SettingsManager` |
-| `Pooling/` | `ObjectPool<T>` |
-| `Rendering/` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives` |
+| `Pooling/` | `ObjectPool<T>`, `PooledEntitySet<T>` |
+| `Rendering/` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives`, `GridMath` |
 | `Text/` | `TextManager` (handle-based), `TextElement`, `TextHandle` |
-| `Timing/` | `Timer`, `TimerManager` (`After`/`Every`/`Over`) |
-| `Tween/` | `Tween<T>`, `Easing` |
-| `UI/` | `UIManager` (hit-testing, focus, click handlers) |
-| `Utilities/` | `MathUtilities` |
+| `Timing/` | `TimerManager` (`After`/`Every`/`Over`) |
+| `Tween/` | `Tween<T>` + `Tween.Float/Vec2/Color` factories, `Easing` (namespace: `MonoGame.GameFramework.Tweening`) |
+| `UI/` | `UIManager` (hit-testing, focus, click handlers), `HpBar`, `LogBox` |
 
-### Sample: `MonoGame.GameFramework.BattleGrid`
+For detailed usage notes (text-rendering rules, lifecycle hooks, pooling patterns, etc.), see [`CLAUDE.md`](./CLAUDE.md).
 
-Grid-based duel inspired by Mega Man Battle Network. Player (blue, left 3×3) vs. enemy (red, right 3×3), all colored rectangles. WASD to move, Space to shoot, Tab opens a chip-selection overlay with three random chips from a pool (Cannon / Wide Shot / Sword / Recov), R restarts, Esc quits. Enemy AI alternates between movement and one of two attack patterns (single-row or wide-across-all-rows). HP bars, controls hint, and chip-ready indicator are drawn as HUD. Tilde toggles a debug console overlay.
+## Sample games
 
-### Sample: `MonoGame.GameFramework.Platformer`
+Each is playable end-to-end. Run any with:
 
-Side-scrolling platformer. Colored-rectangle player with gravity, variable-height jump, coyote time, and jump buffer. Separate-axis AABB collision against a list of platforms. Patrolling red enemy, green goal, death plane. Camera follows the player with lerp and snaps on respawn. Title screen with Play/Quit buttons; win overlay on touching the goal. A/D or arrows to move, Space to jump, R to respawn, Esc to quit.
+```bash
+dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj
+```
 
-### Tests (`MonoGame.GameFramework.Tests`)
+| Sample | Genre | What it validates |
+|---|---|---|
+| `BattleGrid` | Real-time grid duel | `EventManager` (string API), `TextManager`, `GameStateManager` with inline-mode overlay |
+| `Platformer` | Side-scroller | `Camera2D` with follow-lerp + snap-on-respawn, AABB collision, coyote time, jump buffer |
+| `Shooter` | Twin-stick arena | `PooledEntitySet<Projectile>` + `<Enemy>`, `TimerManager.Every` for spawn waves, `Camera2D.ScreenToWorld` |
+| `Puzzle` | Match-3 | `TileMap` + `TileLayer<Gem>`, `TileLayer.Swap`, `TileMap.TryWorldToCell` |
+| `Roguelike` | Dungeon crawler | Procedural `TileLayer<TileKind>` generation, bump-to-attack, `UI.LogBox` combat log |
+| `TowerDefense` | Wave defense | `GridMath.TryMouseToCell`, `PooledEntitySet<T>` with per-reason `onCull`, `TimerManager.Every` |
+| `Rhythm` | 4-lane rhythm | `Audio.SoundManager` (click SFX), per-lane flash timers |
+| `VisualNovel` | Dialogue tree | `SaveSystem` save/load, `Tween.Float` with `Easing.QuadOut` for char-by-char text reveal |
+| `AutoBattler` | Auto-chess | `EventManager.Subscribe<T>`/`Publish<T>` typed API, multi-state graph (Title→Shop→Combat→PostCombat) |
 
-99 xUnit tests with FluentAssertions covering pure-logic library pieces: `ObjectPool`, `Timer`/`TimerManager`, `Tween`/`Easing`, `MathUtilities`, `TileMap`/`TileLayer`, `EventManager` (string + typed), `SaveSystem`, `Camera2D` math, `GameStateManager` lifecycle, `UIManager` independence, `SpriteSheet.Tint`. Rendering-dependent code (SpriteBatch/SpriteFont/GraphicsDevice) is smoke-tested via the two sample games rather than unit tests.
+All 9 title screens inherit from `Lifecycle.TitleScreenState` (override `BackgroundColor`, `TitleText`, `GetButtons()` — ~30 lines each vs. ~100 hand-rolled).
+
+## Build, test, run
+
+```bash
+dotnet build Game.sln     # Build all projects
+dotnet test  Game.sln     # Run all 122 library tests
+dotnet restore            # Restore NuGet packages
+```
+
+## Tests (`MonoGame.GameFramework.Tests`)
+
+122 xUnit tests with FluentAssertions covering pure-logic pieces: `ObjectPool`, `PooledEntitySet`, `TimerManager`, `Tween`/`Easing`, `TileMap`/`TileLayer` (including `Swap` and `TryWorldToCell`), `GridMath`, `EventManager` (string + typed), `SaveSystem`, `Camera2D`, `GameStateManager` lifecycle, `UIManager`, `SpriteSheet.Tint`, `TitleScreenState` registration/lifecycle, `HpBar` fill-width math, `LogBox` queue/trim. Rendering-dependent code (SpriteBatch/SpriteFont/GraphicsDevice) is smoke-tested via the nine sample games.
+
+## History & design rationale
+
+- [`FINDINGS.md`](./FINDINGS.md) — 9-game library review. Tracks every observation that shaped the current API surface: what was kept (validated by real consumers), what was deleted (zero consumers across all 9 games), and what was extracted (duplicated across 3+ games). Includes the §8 "Suggested Execution Order" — a 6-commit cleanup that has been executed end-to-end.
+- [`CLAUDE.md`](./CLAUDE.md) — guidance for AI agents working in this repo. Usage notes for every library helper, CLAUDE convention for text rendering, lifecycle, pooling, etc.

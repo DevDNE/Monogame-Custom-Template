@@ -4,33 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with two sample games in different genres (`MonoGame.GameFramework.BattleGrid` — grid-duel; `MonoGame.GameFramework.Platformer` — side-scroller) that showcase it. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
+A reusable MonoGame DesktopGL framework library (`MonoGame.GameFramework`) with **nine sample games in different genres** that exercise and validate it. Uses Microsoft.Extensions.DependencyInjection for wiring services together.
 
 ## Solution Structure
 
 ```
 Game.sln
 src/
-  MonoGame.GameFramework/             ← Class library (reusable framework)
-  MonoGame.GameFramework.BattleGrid/  ← Sample game: grid-based duel
-  MonoGame.GameFramework.Platformer/  ← Sample game: side-scroller
-  MonoGame.GameFramework.Tests/       ← xUnit tests for the library
+  MonoGame.GameFramework/               ← Class library (reusable framework)
+  MonoGame.GameFramework.BattleGrid/    ← Grid-based duel (Mega Man Battle Network-style)
+  MonoGame.GameFramework.Platformer/    ← Side-scrolling platformer
+  MonoGame.GameFramework.Shooter/       ← Twin-stick arena survival
+  MonoGame.GameFramework.Puzzle/        ← Match-3 gem board
+  MonoGame.GameFramework.Roguelike/     ← Turn-based dungeon crawler
+  MonoGame.GameFramework.TowerDefense/  ← Wave-based tower defense
+  MonoGame.GameFramework.Rhythm/        ← 4-lane rhythm game
+  MonoGame.GameFramework.VisualNovel/   ← Dialogue-tree VN with save/load
+  MonoGame.GameFramework.AutoBattler/   ← Auto-chess shop + combat loop
+  MonoGame.GameFramework.Tests/         ← xUnit tests for the library (122 tests)
 ```
 
 ## Build & Run
 
 ```bash
 dotnet build Game.sln                                                                              # Build all projects
-dotnet test  Game.sln                                                                              # Run the 99 library tests
-dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj   # Run the grid-duel sample
-dotnet run --project src/MonoGame.GameFramework.Platformer/MonoGame.GameFramework.Platformer.csproj   # Run the platformer sample
+dotnet test  Game.sln                                                                              # Run all 122 library tests
+dotnet run --project src/MonoGame.GameFramework.BattleGrid/MonoGame.GameFramework.BattleGrid.csproj   # Run any sample — swap the project name
 dotnet restore                                                                                     # Restore NuGet packages
 ```
 
-Each sample game has its own `Content/Content.mgcb`. Both currently reference only a single font (`fonts/Arial.spritefont`) — all entities render as colored rectangles via `Rendering.Primitives`, so no sprite atlases are needed. Edit a content file with:
+Each sample game has its own `Content/Content.mgcb`. All reference a single font (`fonts/Arial.spritefont`); Rhythm additionally bundles `audio/click.wav`. Entities render as colored rectangles via `Rendering.Primitives`. Edit a content file with:
 ```bash
 dotnet mgcb-editor ./src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb
 ```
+
+Spritefont charset: all 9 games widened the default charset to include Latin-1 Supplement, en/em dashes, curly quotes, ellipsis, and bullet. Pasting any of those into flavour text no longer crashes `SpriteFont.MeasureString`. If you edit a `.spritefont` and the incremental cache doesn't pick it up, clear `Content/bin` + `Content/obj` in the affected game before rebuilding.
 
 ## Tech Stack
 
@@ -46,39 +54,65 @@ dotnet mgcb-editor ./src/MonoGame.GameFramework.BattleGrid/Content/Content.mgcb
 
 **Namespace root**: `MonoGame.GameFramework`
 
-The library is organized into 15 domain folders, each with a matching namespace. Services are registered by `Core/ServiceCollectionExtensions.AddGameFrameworkManagers()` and resolved via DI.
+The library is organized into domain folders, each with a matching namespace. Services are registered by `Core/ServiceCollectionExtensions.AddGameFrameworkManagers()` and resolved via DI.
 
 | Folder | Namespace | Contents |
 |---|---|---|
 | `Audio/` | `MonoGame.GameFramework.Audio` | `SoundManager` |
 | `Content/` | `MonoGame.GameFramework.Content` | `AssetCatalog` |
-| `Core/` | `MonoGame.GameFramework.Core` | `Entity`, `ServiceCollectionExtensions` |
-| `Debugging/` | `MonoGame.GameFramework.Debugging` | `ILogger`, `ConsoleLogger`, `PerformanceMonitor` |
+| `Core/` | `MonoGame.GameFramework.Core` | `ServiceCollectionExtensions` |
+| `Debugging/` | `MonoGame.GameFramework.Debugging` | `ILogger`, `ConsoleLogger`, `DebugOverlay` |
 | `Events/` | `MonoGame.GameFramework.Events` | `EventManager` (string-keyed + typed `Subscribe<T>`/`Publish<T>`), `GameEventArgs` |
 | `Input/` | `MonoGame.GameFramework.Input` | `KeyboardManager`, `MouseManager`, `GamePadManager` |
-| `Lifecycle/` | `MonoGame.GameFramework.Lifecycle` | `GameState` + `GameStateManager`, `GameScene` + `SceneManager` |
+| `Lifecycle/` | `MonoGame.GameFramework.Lifecycle` | `GameState` + `GameStateManager`, `GameScene` + `SceneManager`, `TitleScreenState` |
 | `Persistence/` | `MonoGame.GameFramework.Persistence` | `SaveSystem`, `SaveFile<T>`, `SettingsManager` |
-| `Pooling/` | `MonoGame.GameFramework.Pooling` | `ObjectPool<T>` |
-| `Rendering/` | `MonoGame.GameFramework.Rendering` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>` |
+| `Pooling/` | `MonoGame.GameFramework.Pooling` | `ObjectPool<T>`, `PooledEntitySet<T>` |
+| `Rendering/` | `MonoGame.GameFramework.Rendering` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives`, `GridMath` |
 | `Text/` | `MonoGame.GameFramework.Text` | `TextManager` (handle-based), `TextElement`, `TextHandle` |
-| `Timing/` | `MonoGame.GameFramework.Timing` | `Timer`, `TimerManager` (`After`/`Every`/`Over`) |
-| `Tween/` | `MonoGame.GameFramework.Tween` | `Tween<T>` + `Tween.Float/Vec2/Color` factories, `Easing` |
-| `UI/` | `MonoGame.GameFramework.UI` | `UIManager` (hit-testing, focus, click handlers) |
-| `Utilities/` | `MonoGame.GameFramework.Utilities` | `MathUtilities` (`Angle`, `RandomFloat`, `RandomInt`, `RandomVector2`) |
+| `Timing/` | `MonoGame.GameFramework.Timing` | `TimerManager` (`After`/`Every`/`Over`), internal `Timer` |
+| `Tween/` | `MonoGame.GameFramework.Tweening` | `Tween<T>` + `Tween.Float/Vec2/Color` factories, `Easing` |
+| `UI/` | `MonoGame.GameFramework.UI` | `UIManager` (hit-testing, focus, click handlers), `HpBar`, `LogBox` |
 
-**Base classes** (all in `Lifecycle/` or `Core/`):
-- `Core/Entity` — abstract entity with `LoadContent`/`UnloadContent`/`Update`, plus virtual `Draw` with empty default.
+**Base classes** (all in `Lifecycle/`):
 - `Lifecycle/GameState` — stack-based state with `Entered`/`Leaving`/`Obscuring`/`Revealed`/`Update`/virtual `Draw`.
 - `Lifecycle/GameScene` — scene with `LoadContent`/`UnloadContent`/`Update`/virtual `Draw`.
+- `Lifecycle/TitleScreenState` — base for title screens. Override `BackgroundColor`, `TitleText`, and `GetButtons()`; optionally override `SubtitleText`, `HintText`, `ButtonWidth`, `ButtonGap`, `TitleY`, `SubtitleY`, hover/normal/disabled button colors. `ButtonSpec(Id, Label, OnClick, Enabled)` captures each button; disabled buttons are rendered greyed and don't fire clicks. `Revealed()` re-invokes `GetButtons()` so state-dependent buttons (e.g. VN's Continue enabled when a save exists) can refresh on re-entry. All 9 sample games use this base; see `src/MonoGame.GameFramework.VisualNovel/GameStates/TitleState.cs` for the most complex consumer.
 
-**SpriteSheet construction**: use the factories, not the old 8-arg ctor.
-- `SpriteSheet.Static(texture, destinationFrame, sourceFrame: ..., name: ...)` — single-frame.
-- `SpriteSheet.Animated(texture, frames, destinationFrame, frameInterval, name: ..., startFrame: ...)` — multi-frame.
+Per-game entities are plain classes — the library does not provide a shared entity base (the previous `Core.Entity` was deleted after 8 of 9 sample games skipped it). Shape your game's entities to fit the game; no inheritance required.
+
+**SpriteSheet construction**: single factory, single frame.
+- `SpriteSheet.Static(texture, destinationFrame, sourceFrame: ..., name: ...)` — creates a static (non-animated) sprite.
 - `SpriteSheet.Tint` is mutable (defaults to `Color.White`); `DrawManager` respects it, so runtime tint/flash/fade works without replacing the sprite.
+- Animation support was removed — no sample game used the multi-frame `Animated` factory. If a future game needs frame cycling, add it back then.
+
+**UI helpers** (`UI/`):
+- `HpBar.Draw(sb, rect, current, max, fill)` — background + fill bar. Fill width clamps `current` to `[0, max]`, handles `max == 0` defensively, no-ops on zero-width rect. Default background is `Color(25, 30, 45)`.
+- `HpBar.DrawWithBorder(sb, rect, current, max, fill, border)` — adds a 2px border (configurable thickness). Use this for prominent bars; plain `Draw` for dozens of tiny on-enemy bars.
+- `LogBox(maxLines, fadeStart, fadeStep, baseColor?)` — fixed-size scrolling-text panel. `Add(string)` enqueues + trims; `Draw(sb, font, origin, lineHeight)` lays lines top-down from `origin` with a fade gradient. For bottom-anchored placement, compute `origin.Y = bottomY - (Count - 1) * lineHeight`. Newest messages are fully opaque; oldest fade to `fadeStart * baseColor`.
+
+**Pooling helpers** (`Pooling/`):
+- `ObjectPool<T>(factory, prewarm, onRent?, onReturn?)` — Rent/Return pool for GC-sensitive entities (projectiles, enemies).
+- `PooledEntitySet<T>(pool, isAlive)` — wraps `ObjectPool<T>` with a live list + rent/update/cull loop. `Rent()`, `UpdateAndCull(update, onCull?)`, `Cull(onCull?)`, `ReturnAll()`. `onCull` delegate fires per culled item before return, so consumers can tally side-effects (score, lives, gold) that differ by reason. See Shooter and TowerDefense `PlayState.cs` for usage.
+
+**Debug overlay** (`Debugging/DebugOverlay.cs`):
+- Tilde-toggled on-screen diagnostics. Registered as a DI singleton by `AddGameFrameworkManagers()` — every game gets it automatically.
+- Wiring in `Game1` is three lines: resolve from DI, call `SetFont(_font)` after the font loads, and wrap the state-manager update: `_overlay.Update(gt); if (!_overlay.ShouldSkipUpdate) _gsm.Update(gt); … _gsm.Draw(sb, gt); _overlay.Draw(sb, gt);`.
+- Keys (only while `Enabled`): `~` toggles the overlay, `Space` toggles pause, `.` steps one frame while paused.
+- Built-in panel: FPS + frame-time ms, GC memory MB + gen0/1/2 counts, state-stack depth, UI element count, active timer count, and the last 12 events dispatched through `EventManager` (both string API and typed `Publish<T>`).
+- Per-game watches: `_overlay.AddWatch("name", () => "value")` — registered once in `Game1.LoadContent` or a state's `Entered()`. `AddPooledSetWatch("name", set)` is a convenience for `PooledEntitySet<T>` — shows `N live / M pooled`. Shooter, TowerDefense, BattleGrid, and AutoBattler all register watches out of the box.
+- **Pause semantics**: `ShouldSkipUpdate` only gates `GameStateManager.Update`. `KeyboardManager.Update`, `MouseManager.Update`, `UIManager.Update`, and the overlay's own `Update` all still run every frame — otherwise input would die while paused and the overlay couldn't react. Keep this in mind if a game-side subsystem must also halt during pause.
+
+**Rendering helpers**:
+- `Rendering.Primitives` — call `Initialize(GraphicsDevice)` once in `Game1.LoadContent`, then use `Primitives.Pixel` or `Primitives.DrawRectangle(sb, rect, color)` anywhere a solid-color rectangle is needed. Avoids re-creating 1×1 textures per entity.
+- `Rendering.GridMath.TryMouseToCell(mouse, origin, cellSize, cols, rows, out col, out row)` — bounds-checked conversion from mouse position to grid cell for games that don't use `TileMap` (e.g. TowerDefense's non-tile grid, AutoBattler's shop board). If you have a `TileMap`, prefer its `TryWorldToCell` instead.
 
 **Pixel texture**: call `Rendering.Primitives.Initialize(GraphicsDevice)` once in `Game1.LoadContent`, then use `Primitives.Pixel` or `Primitives.DrawRectangle(spriteBatch, rect, color)` anywhere a solid-color rectangle is needed. Avoids re-creating 1×1 textures in every entity.
 
 **GameStateManager lifecycle**: `PushState`, `PopState`, and `ChangeState` automatically call the right hooks — `Entered`, `Leaving`, `Obscuring`, `Revealed`. Consumers should not invoke these manually after a transition. Initial push fires `Entered` only (nothing to reveal from).
+
+**`TimerManager.Every`/`After` are cancellable**: both return the `Timer` they allocate. Store the reference if the caller may need to `Cancel()` it (e.g. a spawn timer that should stop when the wave target is met). Ignored return value is fine for fire-and-forget timers.
+
+**`TileMap.GetLayer<T>(name)` — cache the reference**: `GetLayer<T>` does a dictionary lookup + cast on every call. Consumers should resolve the layer once in their constructor and keep a field (e.g. `private readonly TileLayer<Gem> _gems`), not call `GetLayer` per frame. `TileMap.TryWorldToCell` bounds-checks and clamps; prefer it over the raw `WorldToCell` when a click can land outside the map.
 
 **Text rendering** — the library offers two paths, by design:
 - **`Text.TextManager`** — handle-based, batched text with group management (`ClearGroup`, `ScrollText`). Use for HUD text that persists frame-to-frame: score counters, chat logs, status labels. The tactical demo's enemy HP counter and console overlay use this.
@@ -88,37 +122,19 @@ Rule of thumb: if you'd register it and mutate occasionally, use `TextManager`. 
 
 ### Sample games
 
-Two sample games live in `src/` next to the library. Both are playable end-to-end and exist to validate the library against different genres.
+Nine sample games live in `src/` next to the library. Each is playable end-to-end and validates the library against a different genre. See `FINDINGS.md` for the 9-game review that drove the library's current shape.
 
-#### `MonoGame.GameFramework.BattleGrid`
-Grid-based duel inspired by Mega Man Battle Network. 3×3 grid per side, player on the left (blue), enemy on the right (red), all drawn as colored rectangles via `Rendering.Primitives`.
+- **`BattleGrid`** — 3×3 real-time grid duel (Mega Man Battle Network style). WASD movement, Space fire, Tab chip selection (Cannon/Wide Shot/Sword/Recov), enemy AI alternating move/attack patterns. Entities in `Components/Entities/`; `BattleScene` owns them; `PlayState` has a `Mode` enum (`Playing`/`SelectingChip`/`Won`/`Lost`). Uses `EventManager` (string API), `TextManager` (tilde-console), `Components/UI/ConsoleUI.cs` debug overlay.
+- **`Platformer`** — side-scroller with gravity, variable-height jump, coyote time, jump buffer, separate-axis AABB collision, patrolling enemy, camera lerp + snap-on-respawn. A/D or arrows move, Space jumps, R respawns.
+- **`Shooter`** — twin-stick arena survival. 2400×1600 arena, WASD move, mouse aim, pursuing enemies spawning every 1.5 s via `TimerManager.Every`, pooled `Projectile`/`Enemy` via `PooledEntitySet<T>`, `Camera2D.ScreenToWorld` for mouse aiming. R restarts.
+- **`Puzzle`** — 7×7 match-3 gems via `TileMap` + `TileLayer<Gem>`. Click two adjacent cells to swap; matches of 3+ clear with gravity-pack and refill cascade. `TileMap.TryWorldToCell` for mouse-pick; `TileLayer<T>.Swap` for swap.
+- **`Roguelike`** — turn-based dungeon crawler. Procedural rooms-and-corridors on a 60×34 `TileLayer<TileKind>`, bump-to-attack, monsters act after each player action, stairs descend. Combat log via `UI.LogBox`.
+- **`TowerDefense`** — wave-based. 20×14 grid, fixed S-shaped path, click to place towers (`GridMath.TryMouseToCell`), pooled enemies/projectiles via `PooledEntitySet<T>` with per-cull-reason `onCull` delegate (leaked → lose life; killed → gold). Three waves, 5 lives.
+- **`Rhythm`** — 4-lane rhythm game. Hard-coded 30-second chart, ±50 ms / ±150 ms hit windows, click SFX via `Audio.SoundManager`. Lane flash uses float-per-lane (not `Tween`).
+- **`VisualNovel`** — 11-node dialogue graph with a 3-way choice branching to three endings, character-by-character text reveal using `Tween.Float(0→1, Easing.QuadOut)`, save/load via `Persistence.SaveSystem`. Title screen has conditional Continue button (enabled only when a save exists) — see how `TitleScreenState.GetButtons()` returns a spec list that `Revealed()` refreshes.
+- **`AutoBattler`** — auto-chess. Shop → Combat → PostCombat state graph. 3 unit types (Warrior/Archer/Tank) with implicit rock-paper-scissors. Drag-to-place during shop (hand-rolled; `UIManager.OnClick` is wrong shape for drags). Combat ticks every 0.5 s with hand-rolled BFS pathfinding; `EventManager.Subscribe<UnitDamaged>`/`Publish<T>` (typed API) drive the combat log.
 
-- **Controls**: WASD to move on the player grid; Space to fire a buster shot; Tab to open chip selection; number keys `1`/`2`/`3` pick a chip; R restarts; Esc quits.
-- **Enemy AI**: `EnemyPlayer.Update` alternates every 1.5 s between moving to a random cell and firing one of two rotating patterns (single-row shot vs. wide shot across all rows).
-- **Chip system**: `PlayState` holds a `Mode` enum (`Playing`/`SelectingChip`/`Won`/`Lost`). Tab switches to `SelectingChip`, which pauses the scene update but keeps drawing the world behind an overlay. Four chips in the pool: Cannon (40 dmg), Wide Shot (15×3), Sword (30 same-row), Recov (heal 30). 3 s cooldown after use.
-- **HUD**: `PlayState.DrawHud` renders HP bars with numeric labels, a controls hint strip at the bottom, and a chip-ready / cooldown indicator at top center.
-- **File layout**:
-  - `Game1.cs` — thin shell; resolves managers, initializes `Primitives`, pushes `TitleState`.
-  - `BattleConfig.cs` — grid constants (tile size, board origins, default projectile damage).
-  - `Grid.cs` — static (col, row) → pixel coordinate helpers.
-  - `GameStates/` — `TitleState`, `PlayState`, `DebugState` (tilde-toggled console overlay).
-  - `Scenes/BattleScene.cs` — owns `Player`, `EnemyPlayer`, `Gameboard`.
-  - `Components/Entities/` — `Player`, `EnemyPlayer`, `Projectile`, `Gameboard`.
-  - `Components/UI/ConsoleUI.cs` — debug log overlay.
-  - `Engine/Rules/GameRulesManager.cs` — grid boundary validation helpers.
-
-#### `MonoGame.GameFramework.Platformer`
-Side-scrolling platformer. Colored-rectangle player, platforms, patrolling enemy, green goal.
-
-- **Controls**: A/D or arrow keys to move; Space to jump (hold for higher jump); R to respawn; Esc to quit.
-- **Physics**: gravity + horizontal acceleration in `Player.Update`; separate-axis AABB resolution against a `List<Platform>`. Coyote time 150 ms, jump buffer 150 ms, variable-height jump via `JumpCutVelocity`.
-- **Camera**: `Rendering.Camera2D` with `Target` follow and lerp; `PlayState.Respawn` snaps the camera to the player to avoid a long pan.
-- **Win/Lose**: death plane at y=800 triggers respawn; touching the green goal enters `_won` state with "Press R to play again" overlay.
-- **File layout**:
-  - `Game1.cs` — thin shell; `Primitives.Initialize`; pushes `TitleState`.
-  - `GameStates/` — `TitleState`, `PlayState`.
-  - `Entities/` — `Player`, `Platform`, `Enemy`, `Goal`.
-  - `Content/fonts/Arial.spritefont`.
+All 9 games share the same shell: `Program.cs` → DI container setup → `Game1.cs` thin shell calling `Primitives.Initialize` and pushing `TitleState` → `GameStates/` directory. All title screens inherit from `Lifecycle.TitleScreenState`.
 
 ## Mac Setup Notes
 

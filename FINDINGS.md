@@ -1,6 +1,6 @@
 # Findings — Library Review from Building Sample Games
 
-Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`. Updated 2026-04-18 (d) — **Puzzle** sample added (match-3 cascade); first real consumer of `TileMap` + `TileLayer<T>`. Surfaced a SpriteFont charset footgun (§1.10). Updated 2026-04-18 (e) — **Roguelike** sample added (turn-based dungeon crawler with procedural generation); second `TileMap` consumer + hand-rolled turn scheduling. Updated 2026-04-18 (f) — **TowerDefense** sample added; second `ObjectPool` consumer and first mouse-driven grid-cell placement interaction. Updated 2026-04-18 (g) — **Rhythm** sample added; first real `Audio.SoundManager` consumer and first content-pipelined audio asset. Updated 2026-04-18 (h) — **VisualNovel** sample added; first real `Persistence.SaveSystem` consumer, first real `Tween<T>` consumer, and surfaced a namespace/class collision bug (§1.14). Updated 2026-04-18 (i) — **AutoBattler** sample added; first real `EventManager` typed-API consumer, most complex state machine (Title/Shop/Combat/PostCombat), hand-rolled BFS pathfinding. **§8 fully revised with 9-game data.**
+Original snapshot: 2026-04-18. Updated 2026-04-18 (a) — four non-deferred §6 items landed in commit `702dd54`; their findings below are annotated as **Fixed**. Updated 2026-04-18 (b) — BattleGrid expanded from a tactical-grid stub into a real game with chip selection, enemy AI patterns, and a full HUD. Updated 2026-04-18 (c) — **Shooter** sample added (twin-stick arena survival); first real load test for `ObjectPool`, `TimerManager`, and `Camera2D.ScreenToWorld`. Updated 2026-04-18 (d) — **Puzzle** sample added (match-3 cascade); first real consumer of `TileMap` + `TileLayer<T>`. Surfaced a SpriteFont charset footgun (§1.10). Updated 2026-04-18 (e) — **Roguelike** sample added (turn-based dungeon crawler with procedural generation); second `TileMap` consumer + hand-rolled turn scheduling. Updated 2026-04-18 (f) — **TowerDefense** sample added; second `ObjectPool` consumer and first mouse-driven grid-cell placement interaction. Updated 2026-04-18 (g) — **Rhythm** sample added; first real `Audio.SoundManager` consumer and first content-pipelined audio asset. Updated 2026-04-18 (h) — **VisualNovel** sample added; first real `Persistence.SaveSystem` consumer, first real `Tween<T>` consumer, and surfaced a namespace/class collision bug (§1.14). Updated 2026-04-18 (i) — **AutoBattler** sample added; first real `EventManager` typed-API consumer, most complex state machine (Title/Shop/Combat/PostCombat), hand-rolled BFS pathfinding. **§8 fully revised with 9-game data.** Updated 2026-04-18 (j) — **§8 Suggested Execution Order completed end-to-end**: Tween namespace renamed to `Tweening`; `TileLayer.Swap` + `TileMap.TryWorldToCell` + `GridMath.TryMouseToCell` added; `SoundManager.PlaySoundEffect` now logs on unloaded names. Tier B deletions landed: `Core.Entity` (+migrated 4 BattleGrid subclasses), `SpriteSheet.Animated`, `Utilities.MathUtilities`, `Debugging.PerformanceMonitor`; `Timing.Timer` constructor made internal. Tier D extractions landed: `Lifecycle.TitleScreenState` (all 9 games migrated, ~720 lines collapsed), `UI.HpBar` (4 consumers migrated), `UI.LogBox` (Roguelike + AutoBattler migrated; BattleGrid stays on `TextManager`), `Pooling.PooledEntitySet<T>` (Shooter + TowerDefense migrated). Tests: 100 → 122 passing. All items in §8 Tier A / Tier B / Tier D #1-5 are now ✅ Done.
 
 ## Context
 
@@ -328,7 +328,7 @@ Ordered by value-per-effort. None are urgent; pick when the trigger hits.
 Deferred — wait for a trigger:
 - Input rebinding layer (Tier 3 backlog; first user friction).
 - Particle system (landing dust would trigger this).
-- Dev console overlay (first painful debugging session).
+- ✅ **Dev console overlay** — Done 2026-04-19. Shipped as `Debugging.DebugOverlay` (tilde-toggled). Replaces BattleGrid's former `DebugState` + `ConsoleUI` and gives the other 8 games their first runtime-diagnostics surface. Also adds pause + step-frame (`Space` / `.`). Covered by 14 new tests. `EventManager` gained a public `AnyEvent` hook so the overlay can tail every event without pre-subscribing.
 - Pathfinding (smart enemy).
 
 ---
@@ -453,27 +453,27 @@ The following primitives moved off the speculative list over the course of the 9
 Small, backward-compatible, concrete evidence. Build them before the next game or the first real project.
 
 1. ✅ **Widen default spritefont charset** (§1.10) — **Done post-AutoBattler.** All 9 spritefonts now cover ASCII + Latin-1 Supplement + common typographic punctuation. Em-dash/curly quotes/accented letters render without crashing.
-2. **Rename `Tween` namespace or class to fix the collision** (§1.14). The `using MonoGame.GameFramework.Tween;` / `Tween.Float(...)` conflict forced an ugly `TweenOf` alias in both VN's `PlayState` and the test project. Rename the namespace to `MonoGame.GameFramework.Tweening` (keeps the static class called `Tween`, which reads best). ~6 files touched.
-3. **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). 3-line helper; Puzzle wanted it.
-4. **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** returning `bool` (§1.9). Bounds-clamping variant; Puzzle/TD/AutoBattler all added bounds-checks themselves.
-5. **`Grid.TryMouseToCell(mouse, origin, cellSize, cols, rows, out col, out row)` helper** — the mouse-position-to-grid-cell conversion appears in Puzzle, TowerDefense, AutoBattler (three consumers). ~8 lines. Not `UIManager`'s job (see §1 note on why grid-click is different from button-click).
-6. **Document `TimerManager.Every` return-value cancellability** in CLAUDE.md. TowerDefense missed that `Every` returns a `Timer` with a `Cancel()` method. One-paragraph doc fix.
-7. **Document the `cache-GetLayer<T>` pattern** in CLAUDE.md. All `TileMap` consumers cache the layer reference in their constructor; the intended usage isn't obvious from the API.
-8. **Warn in `SoundManager.PlaySoundEffect` when the sound isn't loaded** (§1 Rhythm). Silent no-op is a real bug class. One-line log or throw.
+2. ✅ **Rename `Tween` namespace or class to fix the collision** (§1.14). **Done 2026-04-18 (j)**. Namespace renamed `MonoGame.GameFramework.Tween` → `MonoGame.GameFramework.Tweening`; static class `Tween` kept. `TweenOf` alias removed from VN `PlayState` and test project. Test namespace `MonoGame.GameFramework.Tests.Tween` also collided with the class and was renamed `…Tests.Tweening` as part of the same fix.
+3. ✅ **`TileLayer<T>.Swap((c,r),(c,r))`** (§1.9). **Done 2026-04-18 (j)**. 3-line helper using tuple-deconstruction swap + the existing indexer. Covered by 2 new tests.
+4. ✅ **`TileMap.TryWorldToCell(Vector2, out int col, out int row)`** (§1.9). **Done 2026-04-18 (j)**. Bounds-checked variant; returns `false` for out-of-map coordinates without mutating `col`/`row` meaningfully. Covered by 6 new tests (inside/outside-bounds theory + origin-respect).
+5. ✅ **`GridMath.TryMouseToCell(mouse, origin, cellSize, cols, rows, out col, out row)` helper** — shipped as `Rendering.GridMath` (not BattleGrid-specific `Grid`, which is sample code). **Done 2026-04-18 (j)**. Migrated Puzzle, TowerDefense, and AutoBattler ShopState from hand-rolled conversions. Puzzle already had a `TileMap`, so it uses `TileMap.TryWorldToCell` directly; the other two call `GridMath`. 4 new tests.
+6. ✅ **Document `TimerManager.Every` return-value cancellability** in CLAUDE.md. **Done 2026-04-18 (j)**.
+7. ✅ **Document the `cache-GetLayer<T>` pattern** in CLAUDE.md. **Done 2026-04-18 (j)**.
+8. ✅ **Warn in `SoundManager.PlaySoundEffect` when the sound isn't loaded** (§1 Rhythm). **Done 2026-04-18 (j)**. Switched to `Debug.WriteLine` on unknown key (still no-throw). Same treatment for `PlaySong`.
 
-**Total Tier A**: ~1 day of work.
+**Total Tier A**: ~1 day of work. All items ✅ Done.
 
 ### Tier B — Delete (high confidence after 9 games)
 
 Each has zero consumers across nine genre-diverse games. The remaining "kind of utility that'll land in game 6" argument gets thinner with every game that skips them.
 
-1. **`Core.Entity`** — 8 of 9 games skip it. BattleGrid is the only subscriber; Roguelike's `Actor` and AutoBattler's `Unit` are materially different shapes. Deletion saves a class + ~20 lines across consumers.
-2. **`SpriteSheet.Animated`** — 9 games, zero consumers. All games use `SpriteSheet.Static` only (for buttons) or draw rectangles directly. The factory + frame-cycling path is dead code.
-3. **`Utilities.MathUtilities`** — 9 games, zero consumers. Callers reach for `Vector2.Normalize` / `Math.Clamp` / `System.Random` directly. `Angle` / `RandomFloat` / `RandomInt` / `RandomVector2` all unused.
-4. **`Timing.Timer` (raw class)** — 9 games, zero direct consumers. Only `TimerManager.Every/After/Over` get used, and those internally manage `Timer` instances.
-5. **`Debugging.PerformanceMonitor`** — 9 games, zero consumers. A 4-line `GC.GetTotalMemory` + frame-counter snippet in any `Game1` covers this when needed.
+1. ✅ **`Core.Entity`** — **Done 2026-04-18 (j)**. Class deleted. BattleGrid's four subclasses (`Player`, `EnemyPlayer`, `Projectile`, `Gameboard`) migrated to plain classes; `override` keywords dropped; empty `Gameboard.Update` method + its caller in `BattleScene.Update` removed as dead code. `using MonoGame.GameFramework.Core;` still present in every game's `Program.cs` because `ServiceCollectionExtensions` lives there.
+2. ✅ **`SpriteSheet.Animated`** — **Done 2026-04-18 (j)**. Factory deleted; frame-cycling fields (`Frames[]`, `FrameInterval`, `CurrentFrame`, `elapsedTime`) and `Update` method removed; `Clone` method removed (dead). `Frames[CurrentFrame]` in `DrawManager.Draw` replaced by a single `SourceFrame` Rectangle field. `BattleConfig.CharacterFrameInterval` removed as dead constant.
+3. ✅ **`Utilities.MathUtilities`** — **Done 2026-04-18 (j)**. File deleted; matching tests deleted; now-empty `Utilities/` folders removed from both library and tests.
+4. ✅ **`Timing.Timer` (raw class)** — **Done 2026-04-18 (j)**. Kept as a class (it's still the return type of `TimerManager.After/Every/Over` so external consumers can `.Cancel()` it), but the constructor was made `internal` so external code can't directly `new Timer(...)`. Standalone `TimerTests.cs` deleted; `TimerManagerTests` covers observable behavior.
+5. ✅ **`Debugging.PerformanceMonitor`** — **Done 2026-04-18 (j)**. File deleted; no consumers, no tests existed.
 
-**Estimated deletion**: ~350 lines across those five, plus matching tests.
+**Actual deletion**: ~1,185 lines removed, ~316 added net across the whole cleanup (see §8 summary line at the top).
 
 **Explicitly NOT deleted** (contrary to the 5-game recommendation): `Events.EventManager.Subscribe<T>`/`Publish<T>`. AutoBattler validated it with a real multi-event combat system. Keep both APIs.
 
@@ -482,24 +482,24 @@ Each has zero consumers across nine genre-diverse games. The remaining "kind of 
 Don't build or delete. Reassess when the trigger fires.
 
 1. **`Content.AssetCatalog`** — triggers at ~10 content entries in one game. Current games have 1 (font) or 2 (font + click.wav).
-2. **`Debugging.ILogger` / `ConsoleLogger`** — triggers on the first painful debugging session. BattleGrid's `ConsoleUI` partially fills this role but is UI-coupled.
+2. **`Debugging.ILogger` / `ConsoleLogger`** — triggers on the first painful debugging session. Still deferred — the **tilde-toggled `Debugging.DebugOverlay`** (added 2026-04-19) covers the actual "I need runtime visibility" use case better than scrolling log lines would, so the `ILogger` trigger hasn't fired.
 3. **`Rendering.DrawManager`** — only 2 of 9 games use it (BattleGrid, Platformer). The other 7 draw directly. Keep it; stop treating it as the default rendering pattern. Update CLAUDE.md to reflect that direct-draw is fine.
 
 ### Tier D — Extract these patterns from game code (library wins from 9-game evidence)
 
 Patterns that repeated across 3+ games as near-identical copy-paste. These are the highest-leverage library additions the exercise can produce.
 
-1. **`Lifecycle.TitleScreenState` base class** — **9 games, ~80 lines of near-identical copy-paste each** (~720 lines total duplicated). Variation is tiny: background color, title/subtitle/hint strings, button labels, button callbacks. Base class with overridable `Title` / `Subtitle` / `Hint` / `Buttons` properties collapses each usage to ~30 lines. **Highest priority** — single biggest extraction win.
+1. ✅ **`Lifecycle.TitleScreenState` base class** — **Done 2026-04-18 (j)**. Base class takes `IServiceProvider` (not the concrete `ServiceProvider`) so tests can feed a fake DI container. Abstract `BackgroundColor` / `TitleText` / `GetButtons()` plus virtual `SubtitleText` / `HintText` / custom hover colors / `ButtonWidth` / `ButtonGap` / `TitleY` / `SubtitleY` / etc. `CreateButtonSprite` hook for headless tests to bypass `Primitives.Pixel`. All 9 games migrated from ~90-119 lines to ~25-35 lines each. VN's conditional-Continue-button modelled via `ButtonSpec.Enabled`; `Revealed()` rebuilds the spec list so save presence is re-checked when the title reappears. 4 new tests + sample-game smoke.
 
-2. **`UI.HpBar(rect, current, max, fill, background?)` drawing helper** — 5 games (BattleGrid, Shooter, Roguelike, TowerDefense, AutoBattler) hand-roll the same 3-rectangle pattern (bg + fill + optional border). ~10 lines per game. **High priority.**
+2. ✅ **`UI.HpBar(rect, current, max, fill)` drawing helper** — **Done 2026-04-18 (j)**. Two flavours (`Draw` / `DrawWithBorder`) with default bg `Color(25, 30, 45)` matching every consumer. Fill width clamps `current` to `[0, max]` and handles `max == 0` / zero-width rect defensively. Migrated BattleGrid (with border), Shooter, TowerDefense Enemy, AutoBattler ShopState + CombatState. Roguelike uses text-only HP so stays unchanged (the 5th "consumer" the original note counted was text, not a bar). 7 new tests covering fill-width edges.
 
-3. **`UI.LogBox`** scrolling-text widget — 4 games (BattleGrid, Shooter, Roguelike, AutoBattler) hand-roll ~20-line scrolling text panels, some with fade. **Medium priority.**
+3. ✅ **`UI.LogBox`** scrolling-text widget — **Done 2026-04-18 (j)**. `Queue<string>`-backed, configurable `maxLines` / `fadeStart` / `fadeStep` / `baseColor`. `Draw(sb, font, origin, lineHeight)` lays out top-down; consumers that want bottom-aligned placement compute `origin.Y`. Migrated Roguelike (maxLines=5, fadeStart=0.5, fadeStep=0.1) and AutoBattler CombatState (maxLines=6, defaults). BattleGrid stays on `TextManager.ScrollText` by design — the two patterns coexist. 4 new tests.
 
-4. **`Text.WrapText(string, SpriteFont, float maxWidth)`** — VN hand-rolled a word-wrap helper; any game with flavor text longer than a line wants it. 1 consumer today but the pattern is obvious and low-effort (~15 lines). **Medium priority** — build when the second text-heavy game appears.
+4. **`Text.WrapText(string, SpriteFont, float maxWidth)`** — VN hand-rolled a word-wrap helper; any game with flavor text longer than a line wants it. 1 consumer today but the pattern is obvious and low-effort (~15 lines). **Still deferred** — build when the second text-heavy game appears.
 
-5. **`Pooling.PooledEntitySet<T>`** — 2 consumers (Shooter, TowerDefense) independently hand-rolled the same rent/update/cull loop. ~30-line helper eliminates ~20 lines per consumer. **Medium priority**, now ready for extraction after two validations.
+5. ✅ **`Pooling.PooledEntitySet<T>`** — **Done 2026-04-18 (j)**. Wraps `(ObjectPool<T>, List<T> live)` with `Rent`, `UpdateAndCull(update, onCull?)`, `Cull(onCull?)`, `ReturnAll`. `onCull` delegate supports side-effects that differ per reason (TowerDefense: `e.Leaked → _lives--`, `!e.Alive → _gold += GoldPerKill`). `isAlive` predicate is per-set, so TowerDefense's compound check (`e.Alive && !e.Leaked`) works without changing the entity API. Shooter (projectiles + enemies) and TowerDefense (projectiles + enemies) both migrated. 5 new tests.
 
-6. **`Timing.CountdownTimer` struct** — `float remaining; bool Tick(float dt) => (remaining -= dt) <= 0`. BattleGrid has 4, Rhythm has 4 (per-lane flash), AutoBattler has 1 (tick accum). Several consumers, minimal code. **Low priority** — three-line pattern isn't painful inline, but a named primitive helps readability.
+6. **`Timing.CountdownTimer` struct** — `float remaining; bool Tick(float dt) => (remaining -= dt) <= 0`. BattleGrid has 4, Rhythm has 4 (per-lane flash), AutoBattler has 1 (tick accum). Several consumers, minimal code. **Still deferred** — three-line pattern isn't painful inline; low-priority readability improvement.
 
 7. **`UI.DragHandler`** — AutoBattler hand-rolled drag-start/update/end for card placement. Single consumer today, not enough signal. **Deferred** — revisit if a second drag-and-drop game appears.
 
@@ -527,18 +527,18 @@ Temptations the data has disarmed.
 
 ### Suggested execution order
 
-If you want to act on this in a focused session:
+All 6 items executed end-to-end on 2026-04-18 (j). Kept here as historical record.
 
-| # | Commit | Effort |
-|---|---|---|
-| 1 | `chore: widen spritefont charset + rename Tween namespace (§1.14) + small grid/timer helpers (Tier A)` | 2 hours |
-| 2 | `refactor: delete unused primitives (Core.Entity, SpriteSheet.Animated, MathUtilities, raw Timer, PerformanceMonitor)` + migrate BattleGrid's `Entity` subscribers | 2 hours |
-| 3 | `feat: Lifecycle.TitleScreenState base class` + migrate all 9 games | 2 hours |
-| 4 | `feat: UI.HpBar drawing helper` + migrate 5 games | 1 hour |
-| 5 | `feat: UI.LogBox widget` + migrate 4 games | 1 hour |
-| 6 | `feat: Pooling.PooledEntitySet<T>` + migrate Shooter and TowerDefense | 1 hour |
+| # | Status | Commit | Effort |
+|---|---|---|---|
+| 1 | ✅ | `chore: widen spritefont charset + rename Tween namespace (§1.14) + small grid/timer helpers (Tier A)` | 2 hours |
+| 2 | ✅ | `refactor: delete unused primitives (Core.Entity, SpriteSheet.Animated, MathUtilities, raw Timer, PerformanceMonitor)` + migrate BattleGrid's `Entity` subscribers | 2 hours |
+| 3 | ✅ | `feat: Lifecycle.TitleScreenState base class` + migrate all 9 games | 2 hours |
+| 4 | ✅ | `feat: UI.HpBar drawing helper` + migrate 4 games | 1 hour |
+| 5 | ✅ | `feat: UI.LogBox widget` + migrate Roguelike + AutoBattler | 1 hour |
+| 6 | ✅ | `feat: Pooling.PooledEntitySet<T>` + migrate Shooter and TowerDefense | 1 hour |
 
-**Total**: roughly a productive day's work. Net result: the library is objectively smaller, more focused, and duplicates less across the 9 consumer games. The data to justify every change is on file above.
+**Total**: roughly a productive day's work. Net result after execution: 316 additions, 1,185 deletions; test count 100 → 122 passing. The library is objectively smaller, more focused, and duplicates less across the 9 consumer games. The data to justify every change is on file above.
 
 ### What actually mattered in hindsight
 
