@@ -59,6 +59,9 @@ public class PlayState : GameState
     overlay.AddPooledSetWatch("enemies", _enemies);
     overlay.AddWatch("player hp", () => $"{_player.Hp}/{Player.MaxHp}");
     overlay.AddWatch("score", () => _score.ToString());
+    overlay.AddWatch("mouse world", () => _camera == null
+      ? "(pre-spawn)"
+      : _camera.ScreenToWorld(_mouse.GetMousePosition()).ToString());
   }
 
   public override void Entered()

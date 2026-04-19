@@ -3,6 +3,5 @@
   "WindowWidth": 800,
   "WindowHeight": 800,
   "IsFullScreen": false,
-  "IsBorderless": false,
-  "DebugMode": true
+  "IsBorderless": false
 }

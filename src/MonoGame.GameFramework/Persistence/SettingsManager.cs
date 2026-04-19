@@ -11,7 +11,6 @@ public class SettingsManager
   public int WindowHeight { get; set; }
   public bool IsFullScreen { get; set; }
   public bool IsBorderless { get; set; }
-  public bool DebugMode { get; set; }
   public SettingsManager(string settingsFilePath = null)
   {
     WindowTitle = AppDomain.CurrentDomain.FriendlyName;
@@ -19,7 +18,6 @@ public class SettingsManager
     WindowHeight = 600;
     IsFullScreen = false;
     IsBorderless = false;
-    DebugMode = true;
     this.settingsFilePath = settingsFilePath;
   }
 
@@ -42,7 +40,6 @@ public class SettingsManager
       WindowHeight = settings.WindowHeight;
       IsFullScreen = settings.IsFullScreen;
       IsBorderless = settings.IsBorderless;
-      DebugMode = settings.DebugMode;
     }
   }
 }

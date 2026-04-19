@@ -64,6 +64,15 @@ public class PlayState : GameState
     overlay.AddWatch("gold", () => _gold.ToString());
     overlay.AddWatch("lives", () => _lives.ToString());
     overlay.AddWatch("wave", () => $"{_waveIndex}/{WaveSizes.Length}");
+    overlay.AddWatch("mouse cell", () =>
+    {
+      if (GridMath.TryMouseToCell(
+            _mouse.GetMousePosition(),
+            new Vector2(_origin.X, _origin.Y),
+            MapPath.CellSize, MapPath.Columns, MapPath.Rows,
+            out int c, out int r)) return $"({c},{r})";
+      return "(off-map)";
+    });
   }
 
   public override void Entered()

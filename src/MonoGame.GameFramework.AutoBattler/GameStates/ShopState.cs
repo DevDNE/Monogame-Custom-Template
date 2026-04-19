@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
@@ -56,6 +57,17 @@ public class ShopState : GameState
     _viewportWidth = vw;
     _viewportHeight = vh;
     _onStartCombat = onStartCombat;
+
+    DebugOverlay overlay = sp.GetService<DebugOverlay>();
+    overlay.AddWatch("shop cell", () =>
+    {
+      if (GridMath.TryMouseToCell(
+            _mouse.GetMousePosition(), _boardOrigin,
+            BoardCellSize, Board.Columns, Board.Rows,
+            out int c, out int r)) return $"({c},{r}) {(_model?.Board?.IsPlayerCell(c, r) == true ? "player" : "off-side")}";
+      return "(off-board)";
+    });
+    overlay.AddWatch("dragging", () => _draggingCardIndex < 0 ? "-" : $"card {_draggingCardIndex} @ {_dragPosition:F0}");
   }
 
   public override void Entered()
