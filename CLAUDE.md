@@ -68,6 +68,7 @@ The library is organized into domain folders, each with a matching namespace. Se
 | `Persistence/` | `MonoGame.GameFramework.Persistence` | `SaveSystem`, `SaveFile<T>`, `SettingsManager` |
 | `Pooling/` | `MonoGame.GameFramework.Pooling` | `ObjectPool<T>`, `PooledEntitySet<T>` |
 | `Rendering/` | `MonoGame.GameFramework.Rendering` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives`, `GridMath` |
+| `Testing/` | `MonoGame.GameFramework.Testing` | `SmokeHarness` (headless `--exit-after N` support) |
 | `Text/` | `MonoGame.GameFramework.Text` | `TextManager` (handle-based), `TextElement`, `TextHandle` |
 | `Timing/` | `MonoGame.GameFramework.Timing` | `TimerManager` (`After`/`Every`/`Over`), internal `Timer` |
 | `Tween/` | `MonoGame.GameFramework.Tweening` | `Tween<T>` + `Tween.Float/Vec2/Color` factories, `Easing` |
@@ -101,6 +102,20 @@ Per-game entities are plain classes — the library does not provide a shared en
 - Built-in panel: FPS + frame-time ms, GC memory MB + gen0/1/2 counts, state-stack depth, UI element count, active timer count, and the last 12 events dispatched through `EventManager` (both string API and typed `Publish<T>`).
 - Per-game watches: `_overlay.AddWatch("name", () => "value")` — registered once in `Game1.LoadContent` or a state's `Entered()`. `AddPooledSetWatch("name", set)` is a convenience for `PooledEntitySet<T>` — shows `N live / M pooled`. Shooter, TowerDefense, BattleGrid, and AutoBattler all register watches out of the box.
 - **Pause semantics**: `ShouldSkipUpdate` only gates `GameStateManager.Update`. `KeyboardManager.Update`, `MouseManager.Update`, `UIManager.Update`, and the overlay's own `Update` all still run every frame — otherwise input would die while paused and the overlay couldn't react. Keep this in mind if a game-side subsystem must also halt during pause.
+
+**Smoke harness** (`Testing/SmokeHarness.cs`):
+- `Program.cs` parses `--exit-after N` from argv and pokes `ExitAfterFrames` on the DI-registered `SmokeHarness`. `Game1.Update` calls `_smoke.Tick()` and `Exit()`s when the budget runs out. Disabled by default (nothing happens without the flag).
+- Run one game: `dotnet run --project src/MonoGame.GameFramework.Shooter/MonoGame.GameFramework.Shooter.csproj -- --exit-after 60`
+- Run all 9: `scripts/smoke-all.sh [frames] [timeout_seconds]` — builds the solution, launches each sample with a perl-based wall-clock timeout, tails the log on any failure. Catches init-time crashes the unit suite can't see (SpriteFont charset issues, content-pipeline cache staleness, service-resolution failures, LoadContent throws).
+
+**Dev tools** (`src/MonoGame.GameFramework.Tools/`, binary `mgf-tools`):
+- `lint-spritefont --spritefont <path> --project <dir>` — scans a project's C# source for string literals containing characters the spritefont's `CharacterRegion`s don't cover. Prevents the em-dash / curly-quote / accented-letter crash class (FINDINGS §1.10). Approximate by design (regex-based, handles single-line comments and block comments, doesn't fully understand verbatim/interpolated strings — false positives are rare and obvious).
+- `lint-all-samples [--repo <root>]` — lints each `src/MonoGame.GameFramework.*` sample against its own `Content/fonts/Arial.spritefont`. Exits non-zero on any uncovered character.
+- Run: `dotnet run --project src/MonoGame.GameFramework.Tools -- lint-all-samples`
+
+**Scaffolding a new sample** (`scripts/new-sample.sh`):
+- `scripts/new-sample.sh <Name>` copies `template/` → `src/MonoGame.GameFramework.<Name>/`, substitutes the `__SAMPLE__` marker, adds the project to `Game.sln`, builds once.
+- The template wires up `DebugOverlay` + `SmokeHarness` + a `TitleState` that inherits `TitleScreenState` + a stub `PlayState` + a `Content.mgcb` with a pre-widened spritefont charset. Game #10 is one command.
 
 **Rendering helpers**:
 - `Rendering.Primitives` — call `Initialize(GraphicsDevice)` once in `Game1.LoadContent`, then use `Primitives.Pixel` or `Primitives.DrawRectangle(sb, rect, color)` anywhere a solid-color rectangle is needed. Avoids re-creating 1×1 textures per entity.

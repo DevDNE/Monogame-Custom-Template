@@ -329,6 +329,9 @@ Deferred — wait for a trigger:
 - Input rebinding layer (Tier 3 backlog; first user friction).
 - Particle system (landing dust would trigger this).
 - ✅ **Dev console overlay** — Done 2026-04-19. Shipped as `Debugging.DebugOverlay` (tilde-toggled). Replaces BattleGrid's former `DebugState` + `ConsoleUI` and gives the other 8 games their first runtime-diagnostics surface. Also adds pause + step-frame (`Space` / `.`). Covered by 14 new tests. `EventManager` gained a public `AnyEvent` hook so the overlay can tail every event without pre-subscribing.
+- ✅ **Headless smoke-test harness** — Done 2026-04-19. `Testing.SmokeHarness` + `--exit-after N` arg on every `Program.cs` + `scripts/smoke-all.sh`. Launches each of the 9 samples for 60 frames via `perl` alarm-based timeout; fails fast on any non-zero exit. Catches init-time crashes the unit suite can't (SpriteFont charset, content-pipeline staleness, service resolution, LoadContent throws).
+- ✅ **Spritefont linter** — Done 2026-04-19. `src/MonoGame.GameFramework.Tools` project (binary `mgf-tools`) with `lint-spritefont` and `lint-all-samples` commands. Parses `.spritefont` `CharacterRegion`s and scans C# source for string literals containing uncovered characters. Prevents the em-dash / curly-quote / accented-letter crash class flagged in §1.10.
+- ✅ **New-sample scaffolder** — Done 2026-04-19. `scripts/new-sample.sh <Name>` copies `template/` into `src/MonoGame.GameFramework.<Name>/`, renames `__SAMPLE__`, adds to `Game.sln`, builds once. Template includes DebugOverlay + SmokeHarness + a `TitleScreenState`-inheriting title + a widened spritefont charset. Game #10 is one command.
 - Pathfinding (smart enemy).
 
 ---

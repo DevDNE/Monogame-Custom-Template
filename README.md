@@ -54,6 +54,7 @@ Services are registered via `Core/ServiceCollectionExtensions.AddGameFrameworkMa
 | `Persistence/` | `SaveSystem`, `SaveFile<T>`, `SettingsManager` |
 | `Pooling/` | `ObjectPool<T>`, `PooledEntitySet<T>` |
 | `Rendering/` | `DrawManager`, `SpriteSheet`, `Camera2D`, `TileMap`, `TileLayer<T>`, `Primitives`, `GridMath` |
+| `Testing/` | `SmokeHarness` (for `--exit-after N` headless smoke testing) |
 | `Text/` | `TextManager` (handle-based), `TextElement`, `TextHandle` |
 | `Timing/` | `TimerManager` (`After`/`Every`/`Over`) |
 | `Tween/` | `Tween<T>` + `Tween.Float/Vec2/Color` factories, `Easing` (namespace: `MonoGame.GameFramework.Tweening`) |
@@ -86,14 +87,18 @@ All 9 title screens inherit from `Lifecycle.TitleScreenState` (override `Backgro
 ## Build, test, run
 
 ```bash
-dotnet build Game.sln     # Build all projects
-dotnet test  Game.sln     # Run all 122 library tests
-dotnet restore            # Restore NuGet packages
+dotnet build Game.sln                          # Build all projects
+dotnet test  Game.sln                          # Run the 160 library + tools tests
+dotnet restore                                 # Restore NuGet packages
+scripts/smoke-all.sh                           # Launch each of the 9 samples for 120 frames, fail on crash
+scripts/new-sample.sh <Name>                   # Scaffold a new sample (copies template/, wires into Game.sln)
+dotnet run --project src/MonoGame.GameFramework.Tools -- lint-all-samples
+                                               # Check every sample's source against its spritefont charset
 ```
 
 ## Tests (`MonoGame.GameFramework.Tests`)
 
-122 xUnit tests with FluentAssertions covering pure-logic pieces: `ObjectPool`, `PooledEntitySet`, `TimerManager`, `Tween`/`Easing`, `TileMap`/`TileLayer` (including `Swap` and `TryWorldToCell`), `GridMath`, `EventManager` (string + typed), `SaveSystem`, `Camera2D`, `GameStateManager` lifecycle, `UIManager`, `SpriteSheet.Tint`, `TitleScreenState` registration/lifecycle, `HpBar` fill-width math, `LogBox` queue/trim. Rendering-dependent code (SpriteBatch/SpriteFont/GraphicsDevice) is smoke-tested via the nine sample games.
+160 xUnit tests with FluentAssertions covering pure-logic pieces: `ObjectPool`, `PooledEntitySet`, `TimerManager`, `Tween`/`Easing`, `TileMap`/`TileLayer` (including `Swap` and `TryWorldToCell`), `GridMath`, `EventManager` (string + typed + `AnyEvent` hook), `SaveSystem`, `Camera2D`, `GameStateManager` lifecycle + `StackDepth`, `UIManager` + `ElementCount`, `SpriteSheet.Tint`, `TitleScreenState` registration/lifecycle, `HpBar` fill-width math, `LogBox` queue/trim, `DebugOverlay` state machine + watches + event tail + FPS rolling average, `SmokeHarness` arg parsing + frame counter, `SpritefontLinter` range parsing + character-coverage detection. Rendering-dependent code (SpriteBatch/SpriteFont/GraphicsDevice) is smoke-tested via the nine sample games, automated by `scripts/smoke-all.sh`.
 
 ## History & design rationale
 
