@@ -39,7 +39,6 @@ public class BattleScene : GameScene
 
   public override void Update(GameTime gameTime)
   {
-    _gameboard.Update(gameTime);
     _player.Update(gameTime);
     _enemyPlayer.Update(gameTime);
   }

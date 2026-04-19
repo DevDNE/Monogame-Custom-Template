@@ -45,6 +45,8 @@ public class GameStateManager
     return stateStack.Peek();
   }
 
+  public int StackDepth => stateStack.Count;
+
   public void Update(GameTime gameTime)
   {
     _iterationBuffer.Clear();

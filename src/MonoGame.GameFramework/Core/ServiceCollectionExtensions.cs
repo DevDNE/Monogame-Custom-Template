@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<SoundManager>();
     services.AddSingleton<TextManager>();
     services.AddSingleton<UIManager>();
+    services.AddSingleton<DebugOverlay>();
     return services;
   }
 }

@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.TowerDefense.Entities;
 
@@ -58,10 +59,6 @@ public class Enemy
   {
     if (!Alive) return;
     Primitives.DrawRectangle(spriteBatch, Bounds, new Color(230, 80, 80));
-    // Mini HP bar
-    Rectangle barBg = new(Bounds.X, Bounds.Y - 6, Bounds.Width, 4);
-    Primitives.DrawRectangle(spriteBatch, barBg, new Color(25, 30, 45));
-    int fillW = (int)(barBg.Width * (Hp / (float)MaxHp));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(barBg.X, barBg.Y, fillW, barBg.Height), new Color(120, 220, 140));
+    HpBar.Draw(spriteBatch, new Rectangle(Bounds.X, Bounds.Y - 6, Bounds.Width, 4), Hp, MaxHp, new Color(120, 220, 140));
   }
 }

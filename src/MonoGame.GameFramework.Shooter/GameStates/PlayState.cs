@@ -9,7 +9,9 @@ using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Pooling;
 using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Shooter.Entities;
+using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Timing;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.Shooter.GameStates;
 
@@ -29,10 +31,8 @@ public class PlayState : GameState
   private readonly Random _random = new();
 
   private readonly Player _player = new();
-  private readonly ObjectPool<Projectile> _projectilePool;
-  private readonly ObjectPool<Enemy> _enemyPool;
-  private readonly List<Projectile> _liveProjectiles = new();
-  private readonly List<Enemy> _liveEnemies = new();
+  private readonly PooledEntitySet<Projectile> _projectiles;
+  private readonly PooledEntitySet<Enemy> _enemies;
 
   private Camera2D _camera;
   private int _score;
@@ -47,14 +47,18 @@ public class PlayState : GameState
     _viewportWidth = viewportWidth;
     _viewportHeight = viewportHeight;
 
-    _projectilePool = new ObjectPool<Projectile>(
-      () => new Projectile(),
-      prewarm: 32,
-      onReturn: p => p.Alive = false);
-    _enemyPool = new ObjectPool<Enemy>(
-      () => new Enemy(),
-      prewarm: 16,
-      onReturn: e => e.Alive = false);
+    _projectiles = new PooledEntitySet<Projectile>(
+      new ObjectPool<Projectile>(() => new Projectile(), prewarm: 32, onReturn: p => p.Alive = false),
+      isAlive: p => p.Alive);
+    _enemies = new PooledEntitySet<Enemy>(
+      new ObjectPool<Enemy>(() => new Enemy(), prewarm: 16, onReturn: e => e.Alive = false),
+      isAlive: e => e.Alive);
+
+    DebugOverlay overlay = serviceProvider.GetService<DebugOverlay>();
+    overlay.AddPooledSetWatch("projectiles", _projectiles);
+    overlay.AddPooledSetWatch("enemies", _enemies);
+    overlay.AddWatch("player hp", () => $"{_player.Hp}/{Player.MaxHp}");
+    overlay.AddWatch("score", () => _score.ToString());
   }
 
   public override void Entered()
@@ -65,10 +69,8 @@ public class PlayState : GameState
 
   public override void Leaving()
   {
-    foreach (Projectile p in _liveProjectiles) _projectilePool.Return(p);
-    foreach (Enemy e in _liveEnemies) _enemyPool.Return(e);
-    _liveProjectiles.Clear();
-    _liveEnemies.Clear();
+    _projectiles.ReturnAll();
+    _enemies.ReturnAll();
     _timers.Clear();
   }
 
@@ -77,8 +79,8 @@ public class PlayState : GameState
 
   private void StartFresh()
   {
-    _liveProjectiles.Clear();
-    _liveEnemies.Clear();
+    _projectiles.ReturnAll();
+    _enemies.ReturnAll();
     _timers.Clear();
     _score = 0;
     _gameOver = false;
@@ -124,47 +126,28 @@ public class PlayState : GameState
     if (dir.LengthSquared() < 0.01f) dir = new Vector2(1, 0);
     else dir.Normalize();
 
-    Projectile p = _projectilePool.Rent();
+    Projectile p = _projectiles.Rent();
     p.Launch(_player.Position, dir);
-    _liveProjectiles.Add(p);
   }
 
   private void UpdateProjectiles(float dt)
-  {
-    for (int i = _liveProjectiles.Count - 1; i >= 0; i--)
-    {
-      _liveProjectiles[i].Update(dt);
-      if (!_liveProjectiles[i].Alive)
-      {
-        _projectilePool.Return(_liveProjectiles[i]);
-        _liveProjectiles.RemoveAt(i);
-      }
-    }
-  }
+    => _projectiles.UpdateAndCull(p => p.Update(dt));
 
   private void UpdateEnemies(float dt)
-  {
-    for (int i = _liveEnemies.Count - 1; i >= 0; i--)
-    {
-      _liveEnemies[i].Update(dt, _player.Position);
-      if (!_liveEnemies[i].Alive)
-      {
-        _enemyPool.Return(_liveEnemies[i]);
-        _liveEnemies.RemoveAt(i);
-      }
-    }
-  }
+    => _enemies.UpdateAndCull(e => e.Update(dt, _player.Position));
 
   private void CheckCollisions()
   {
     // projectile vs enemy
-    for (int pi = _liveProjectiles.Count - 1; pi >= 0; pi--)
+    IReadOnlyList<Projectile> projectiles = _projectiles.Live;
+    IReadOnlyList<Enemy> enemies = _enemies.Live;
+    for (int pi = projectiles.Count - 1; pi >= 0; pi--)
     {
-      Projectile p = _liveProjectiles[pi];
+      Projectile p = projectiles[pi];
       if (!p.Alive) continue;
-      for (int ei = _liveEnemies.Count - 1; ei >= 0; ei--)
+      for (int ei = enemies.Count - 1; ei >= 0; ei--)
       {
-        Enemy e = _liveEnemies[ei];
+        Enemy e = enemies[ei];
         if (!e.Alive) continue;
         if (p.Bounds.Intersects(e.Bounds))
         {
@@ -177,9 +160,8 @@ public class PlayState : GameState
     }
 
     // enemy vs player
-    for (int ei = 0; ei < _liveEnemies.Count; ei++)
+    foreach (Enemy e in enemies)
     {
-      Enemy e = _liveEnemies[ei];
       if (!e.Alive) continue;
       if (e.Bounds.Intersects(_player.Bounds))
       {
@@ -206,9 +188,8 @@ public class PlayState : GameState
       };
       pos.X = Math.Clamp(pos.X, Enemy.Size, ArenaWidth - Enemy.Size);
       pos.Y = Math.Clamp(pos.Y, Enemy.Size, ArenaHeight - Enemy.Size);
-      Enemy e = _enemyPool.Rent();
+      Enemy e = _enemies.Rent();
       e.Spawn(pos);
-      _liveEnemies.Add(e);
     }
   }
 
@@ -217,8 +198,8 @@ public class PlayState : GameState
     // World pass
     spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
     DrawArena(spriteBatch);
-    foreach (Enemy e in _liveEnemies) e.Draw(spriteBatch);
-    foreach (Projectile p in _liveProjectiles) p.Draw(spriteBatch);
+    foreach (Enemy e in _enemies.Live) e.Draw(spriteBatch);
+    foreach (Projectile p in _projectiles.Live) p.Draw(spriteBatch);
     _player.Draw(spriteBatch);
     spriteBatch.End();
 
@@ -251,11 +232,7 @@ public class PlayState : GameState
 
   private void DrawHud(SpriteBatch spriteBatch)
   {
-    // HP bar top-left
-    Rectangle hpBg = new(20, 20, 240, 22);
-    Primitives.DrawRectangle(spriteBatch, hpBg, new Color(25, 30, 45));
-    int fillW = (int)(hpBg.Width * (_player.Hp / (float)Player.MaxHp));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(hpBg.X, hpBg.Y, fillW, hpBg.Height), new Color(80, 200, 140));
+    HpBar.Draw(spriteBatch, new Rectangle(20, 20, 240, 22), _player.Hp, Player.MaxHp, new Color(80, 200, 140));
     spriteBatch.DrawString(_font, $"HP {_player.Hp}", new Vector2(20, 46), Color.White);
 
     // Score top-right

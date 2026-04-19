@@ -110,4 +110,17 @@ public class GameStateManagerTests
     next.EnteredCount.Should().Be(1);
     m.PeekState().Should().BeSameAs(next);
   }
+
+  [Fact]
+  public void StackDepth_ReflectsPushAndPop()
+  {
+    GameStateManager m = new();
+    m.StackDepth.Should().Be(0);
+    m.PushState(new FakeState());
+    m.StackDepth.Should().Be(1);
+    m.PushState(new FakeState());
+    m.StackDepth.Should().Be(2);
+    m.PopState();
+    m.StackDepth.Should().Be(1);
+  }
 }

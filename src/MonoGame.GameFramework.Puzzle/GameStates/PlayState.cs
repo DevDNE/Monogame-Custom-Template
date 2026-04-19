@@ -51,8 +51,7 @@ public class PlayState : GameState
     if (_mouse.WasLeftMouseButtonPressed())
     {
       Vector2 mouse = _mouse.GetMousePosition();
-      (int col, int row) = _board.Map.WorldToCell(mouse);
-      if (col < 0 || col >= Board.Columns || row < 0 || row >= Board.Rows) { _selected = null; return; }
+      if (!_board.Map.TryWorldToCell(mouse, out int col, out int row)) { _selected = null; return; }
 
       if (_selected is null)
       {

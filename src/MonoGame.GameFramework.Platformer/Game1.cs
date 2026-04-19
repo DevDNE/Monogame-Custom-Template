@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Platformer.GameStates;
@@ -23,6 +24,7 @@ public class Game1 : Game
   private MouseManager _mouseManager;
   private UIManager _uiManager;
   private GameStateManager _gameStateManager;
+  private DebugOverlay _debugOverlay;
 
   public Game1(ServiceProvider serviceProvider)
   {
@@ -44,6 +46,7 @@ public class Game1 : Game
     _mouseManager = _serviceProvider.GetService<MouseManager>();
     _uiManager = _serviceProvider.GetService<UIManager>();
     _gameStateManager = _serviceProvider.GetService<GameStateManager>();
+    _debugOverlay = _serviceProvider.GetService<DebugOverlay>();
     base.Initialize();
   }
 
@@ -52,6 +55,7 @@ public class Game1 : Game
     _spriteBatch = new SpriteBatch(GraphicsDevice);
     Primitives.Initialize(GraphicsDevice);
     _font = Content.Load<SpriteFont>("fonts/Arial");
+    _debugOverlay.SetFont(_font);
 
     PlayState playState = new(_serviceProvider, _font, ViewportWidth, ViewportHeight);
     TitleState titleState = new(
@@ -69,7 +73,8 @@ public class Game1 : Game
     if (_keyboardManager.IsKeyDown(Keys.Escape)) Exit();
 
     _uiManager.Update(gameTime);
-    _gameStateManager.Update(gameTime);
+    _debugOverlay.Update(gameTime);
+    if (!_debugOverlay.ShouldSkipUpdate) _gameStateManager.Update(gameTime);
 
     base.Update(gameTime);
   }
@@ -78,6 +83,7 @@ public class Game1 : Game
   {
     GraphicsDevice.Clear(new Color(20, 24, 40));
     _gameStateManager.Draw(_spriteBatch, gameTime);
+    _debugOverlay.Draw(_spriteBatch, gameTime);
     base.Draw(gameTime);
   }
 }

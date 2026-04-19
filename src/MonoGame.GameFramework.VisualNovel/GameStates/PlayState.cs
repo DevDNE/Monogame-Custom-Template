@@ -7,8 +7,7 @@ using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Rendering;
-using MonoGame.GameFramework.Tween;
-using TweenOf = MonoGame.GameFramework.Tween.Tween;
+using MonoGame.GameFramework.Tweening;
 
 namespace MonoGame.GameFramework.VisualNovel.GameStates;
 
@@ -119,7 +118,7 @@ public class PlayState : GameState
 
   private void StartReveal()
   {
-    _revealTween = TweenOf.Float(0f, 1f, RevealDuration, Easing.QuadOut);
+    _revealTween = Tween.Float(0f, 1f, RevealDuration, Easing.QuadOut);
     _displayedText = "";
   }
 

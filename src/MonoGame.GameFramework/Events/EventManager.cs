@@ -8,6 +8,13 @@ public class EventManager
   private readonly Dictionary<string, EventHandler<GameEventArgs>> eventHandlers = new();
   private readonly Dictionary<Type, Delegate> typedHandlers = new();
 
+  /// <summary>
+  /// Fires after any event is dispatched — string or typed. Intended for
+  /// diagnostics (debug overlay event tail, telemetry) that want to observe
+  /// the bus without pre-subscribing to every event name.
+  /// </summary>
+  public event Action<string, object, GameEventArgs> AnyEvent;
+
   public void Subscribe(string eventName, EventHandler<GameEventArgs> handler)
   {
     if (!eventHandlers.ContainsKey(eventName))
@@ -34,6 +41,7 @@ public class EventManager
     {
       eventHandlers[eventName]?.Invoke(sender, args);
     }
+    AnyEvent?.Invoke(eventName, sender, args);
   }
 
   public void Subscribe<T>(Action<T> handler) where T : class
@@ -56,5 +64,6 @@ public class EventManager
   {
     if (typedHandlers.TryGetValue(typeof(T), out Delegate existing))
       ((Action<T>)existing)?.Invoke(payload);
+    AnyEvent?.Invoke(typeof(T).Name, payload, new GameEventArgs(typeof(T).Name));
   }
 }

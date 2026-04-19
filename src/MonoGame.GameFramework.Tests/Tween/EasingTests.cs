@@ -1,8 +1,8 @@
 using FluentAssertions;
-using MonoGame.GameFramework.Tween;
+using MonoGame.GameFramework.Tweening;
 using Xunit;
 
-namespace MonoGame.GameFramework.Tests.Tween;
+namespace MonoGame.GameFramework.Tests.Tweening;
 
 public class EasingTests
 {

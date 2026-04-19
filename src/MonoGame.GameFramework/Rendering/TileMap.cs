@@ -47,4 +47,18 @@ public class TileMap
     Vector2 local = world - Origin;
     return ((int)(local.X / TileWidth), (int)(local.Y / TileHeight));
   }
+
+  public bool TryWorldToCell(Vector2 world, out int column, out int row)
+  {
+    Vector2 local = world - Origin;
+    if (local.X < 0 || local.Y < 0)
+    {
+      column = -1;
+      row = -1;
+      return false;
+    }
+    column = (int)(local.X / TileWidth);
+    row = (int)(local.Y / TileHeight);
+    return column < Columns && row < Rows;
+  }
 }

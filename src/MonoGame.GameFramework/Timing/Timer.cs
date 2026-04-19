@@ -14,7 +14,7 @@ public class Timer
   private readonly Action _onComplete;
   private readonly Action<float> _onProgress;
 
-  public Timer(float duration, Action onComplete, bool repeating = false, Action<float> onProgress = null)
+  internal Timer(float duration, Action onComplete, bool repeating = false, Action<float> onProgress = null)
   {
     Duration = duration;
     IsRepeating = repeating;

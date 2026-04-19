@@ -8,6 +8,8 @@ public class TimerManager
 {
   private readonly List<Timer> _timers = new();
 
+  public int ActiveTimerCount => _timers.Count;
+
   public Timer After(float seconds, Action callback)
   {
     Timer timer = new(seconds, callback);

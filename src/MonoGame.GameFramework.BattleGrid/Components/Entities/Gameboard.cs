@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
-public class Gameboard : Entity
+public class Gameboard
 {
   private const int TileInset = 4;
 
@@ -19,7 +18,7 @@ public class Gameboard : Entity
     _drawManager = serviceProvider.GetService<DrawManager>();
   }
 
-  public override void LoadContent(ContentManager content)
+  public void LoadContent(ContentManager content)
   {
     Color playerTint = new(50, 90, 170);
     Color enemyTint = new(170, 60, 60);
@@ -53,7 +52,7 @@ public class Gameboard : Entity
     return tile;
   }
 
-  public override void UnloadContent()
+  public void UnloadContent()
   {
     for (int row = 0; row < 3; row++)
     {
@@ -65,5 +64,4 @@ public class Gameboard : Entity
     }
   }
 
-  public override void Update(GameTime gameTime) { }
 }

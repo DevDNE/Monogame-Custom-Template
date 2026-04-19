@@ -57,4 +57,15 @@ public class UIManagerTests
     SpriteSheet s = MakeSprite(new Rectangle(0, 0, 10, 10));
     ui.Invoking(x => x.AddUIElement("g", s)).Should().NotThrow();
   }
+
+  [Fact]
+  public void ElementCount_SumsAcrossGroups()
+  {
+    UIManager ui = new(mouseManager: null);
+    ui.ElementCount.Should().Be(0);
+    ui.AddUIElement("a", MakeSprite(new Rectangle(0, 0, 10, 10)));
+    ui.AddUIElement("a", MakeSprite(new Rectangle(0, 0, 10, 10)));
+    ui.AddUIElement("b", MakeSprite(new Rectangle(0, 0, 10, 10)));
+    ui.ElementCount.Should().Be(3);
+  }
 }

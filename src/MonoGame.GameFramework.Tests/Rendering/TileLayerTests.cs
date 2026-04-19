@@ -60,4 +60,24 @@ public class TileLayerTests
       for (int r = 0; r < 2; r++)
         layer[c, r].Should().Be(9);
   }
+
+  [Fact]
+  public void Swap_ExchangesTwoCells()
+  {
+    TileLayer<int> layer = new("ground", 3, 3);
+    layer[0, 0] = 1;
+    layer[2, 2] = 99;
+    layer.Swap((0, 0), (2, 2));
+    layer[0, 0].Should().Be(99);
+    layer[2, 2].Should().Be(1);
+  }
+
+  [Fact]
+  public void Swap_SamePosition_IsNoOp()
+  {
+    TileLayer<int> layer = new("ground", 3, 3);
+    layer[1, 1] = 42;
+    layer.Swap((1, 1), (1, 1));
+    layer[1, 1].Should().Be(42);
+  }
 }

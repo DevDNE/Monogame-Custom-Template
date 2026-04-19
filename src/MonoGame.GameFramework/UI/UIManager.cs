@@ -14,6 +14,16 @@ public class UIManager
   public SpriteSheet FocusedElement { get; private set; }
   public SpriteSheet HoveredElement { get; private set; }
 
+  public int ElementCount
+  {
+    get
+    {
+      int total = 0;
+      foreach (List<SpriteSheet> list in uiGroups.Values) total += list.Count;
+      return total;
+    }
+  }
+
   public UIManager(MouseManager mouseManager)
   {
     _mouseManager = mouseManager;

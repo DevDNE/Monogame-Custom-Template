@@ -97,4 +97,20 @@ public class TimerManagerTests
     tm.Update(Step(5));
     fired.Should().Be(0);
   }
+
+  [Fact]
+  public void ActiveTimerCount_TracksAddAndCompletion()
+  {
+    TimerManager tm = new();
+    tm.ActiveTimerCount.Should().Be(0);
+    tm.After(0.5f, () => { });
+    tm.Every(1f, () => { });
+    tm.ActiveTimerCount.Should().Be(2);
+
+    tm.Update(Step(0.6));
+    tm.ActiveTimerCount.Should().Be(1);
+
+    tm.Clear();
+    tm.ActiveTimerCount.Should().Be(0);
+  }
 }

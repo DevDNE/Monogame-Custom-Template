@@ -87,4 +87,37 @@ public class TileMapTests
     map.RemoveLayer("ground").Should().BeTrue();
     map.RemoveLayer("ground").Should().BeFalse();
   }
+
+  [Fact]
+  public void TryWorldToCell_InsideBounds_ReturnsTrue()
+  {
+    TileMap map = new(4, 3, 32, 32);
+    bool ok = map.TryWorldToCell(new Vector2(65, 33), out int col, out int row);
+    ok.Should().BeTrue();
+    col.Should().Be(2);
+    row.Should().Be(1);
+  }
+
+  [Theory]
+  [InlineData(-1, 0)]
+  [InlineData(0, -1)]
+  [InlineData(128, 0)]  // col = 128 / 32 = 4, out of 0..3
+  [InlineData(0, 96)]   // row = 96 / 32 = 3, out of 0..2
+  public void TryWorldToCell_OutOfBounds_ReturnsFalse(int x, int y)
+  {
+    TileMap map = new(4, 3, 32, 32);
+    bool ok = map.TryWorldToCell(new Vector2(x, y), out _, out _);
+    ok.Should().BeFalse();
+  }
+
+  [Fact]
+  public void TryWorldToCell_RespectsOrigin()
+  {
+    TileMap map = new(4, 3, 32, 32) { Origin = new Vector2(100, 50) };
+    map.TryWorldToCell(new Vector2(99, 49), out _, out _).Should().BeFalse();
+    bool ok = map.TryWorldToCell(new Vector2(133, 83), out int col, out int row);
+    ok.Should().BeTrue();
+    col.Should().Be(1);
+    row.Should().Be(1);
+  }
 }

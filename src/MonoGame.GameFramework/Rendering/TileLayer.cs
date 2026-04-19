@@ -34,4 +34,9 @@ public class TileLayer<T>
       for (int r = 0; r < Rows; r++)
         _cells[c, r] = value;
   }
+
+  public void Swap((int column, int row) a, (int column, int row) b)
+  {
+    (_cells[a.column, a.row], _cells[b.column, b.row]) = (_cells[b.column, b.row], _cells[a.column, a.row]);
+  }
 }

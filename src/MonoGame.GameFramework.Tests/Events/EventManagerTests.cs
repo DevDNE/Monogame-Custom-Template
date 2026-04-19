@@ -109,4 +109,37 @@ public class EventManagerTests
     em.Publish("string payload");
     pings.Should().Be(0);
   }
+
+  // ---- AnyEvent hook ----
+
+  [Fact]
+  public void AnyEvent_FiresForStringTrigger_EvenWithoutSubscribers()
+  {
+    EventManager em = new();
+    string capturedName = null;
+    em.AnyEvent += (name, _, _) => capturedName = name;
+    em.TriggerEvent("hit", null, new GameEventArgs("msg"));
+    capturedName.Should().Be("hit");
+  }
+
+  [Fact]
+  public void AnyEvent_FiresForTypedPublish_WithTypeName()
+  {
+    EventManager em = new();
+    string capturedName = null;
+    em.AnyEvent += (name, _, _) => capturedName = name;
+    em.Publish(new Ping());
+    capturedName.Should().Be(nameof(Ping));
+  }
+
+  [Fact]
+  public void AnyEvent_FiresAfterRegularSubscribers()
+  {
+    EventManager em = new();
+    var order = new System.Collections.Generic.List<string>();
+    em.Subscribe("hit", (_, _) => order.Add("sub"));
+    em.AnyEvent += (_, _, _) => order.Add("any");
+    em.TriggerEvent("hit", null, new GameEventArgs(""));
+    order.Should().Equal("sub", "any");
+  }
 }

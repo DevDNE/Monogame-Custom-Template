@@ -4,12 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
-using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Rendering;
 using MonoGame.GameFramework.Text;
+using MonoGame.GameFramework.UI;
 using MonoGame.GameFramework.BattleGrid.Components.Entities;
 using MonoGame.GameFramework.BattleGrid.Scenes;
 
@@ -30,11 +31,11 @@ public class PlayState : GameState
   private readonly ServiceProvider _serviceProvider;
   private readonly GameStateManager _gameStateManager;
   private readonly SceneManager _sceneManager;
-  private readonly SettingsManager _settingsManager;
   private readonly EventManager _eventManager;
   private readonly DrawManager _drawManager;
   private readonly TextManager _textManager;
   private readonly KeyboardManager _keyboardManager;
+  private readonly DebugOverlay _debugOverlay;
   private readonly Random _random = new();
 
   private SpriteFont _font;
@@ -42,7 +43,6 @@ public class PlayState : GameState
   private int _viewportHeight;
 
   private BattleScene _battleScene;
-  private DebugState _debugState;
   private Mode _mode = Mode.Playing;
   private Chip[] _availableChips = new Chip[3];
   private float _chipCooldown = 0f;
@@ -53,11 +53,11 @@ public class PlayState : GameState
     _serviceProvider = serviceProvider;
     _gameStateManager = serviceProvider.GetService<GameStateManager>();
     _sceneManager = serviceProvider.GetService<SceneManager>();
-    _settingsManager = serviceProvider.GetService<SettingsManager>();
     _eventManager = serviceProvider.GetService<EventManager>();
     _drawManager = serviceProvider.GetService<DrawManager>();
     _textManager = serviceProvider.GetService<TextManager>();
     _keyboardManager = serviceProvider.GetService<KeyboardManager>();
+    _debugOverlay = serviceProvider.GetService<DebugOverlay>();
     _font = font;
     _viewportWidth = viewportWidth;
     _viewportHeight = viewportHeight;
@@ -66,13 +66,18 @@ public class PlayState : GameState
   public override void Entered()
   {
     StartFreshBattle();
+    RegisterDebugWatches();
     IsActive = true;
+  }
 
-    if (_settingsManager.DebugMode)
-    {
-      _debugState = new DebugState(_serviceProvider);
-      _gameStateManager.PushState(_debugState);
-    }
+  private void RegisterDebugWatches()
+  {
+    Player p = _battleScene.GetPlayer();
+    EnemyPlayer e = _battleScene.GetEnemyPlayer();
+    _debugOverlay.AddWatch("player hp", () => $"{p.Hp}/{Player.MaxHp}");
+    _debugOverlay.AddWatch("enemy hp", () => $"{e.Hp}/{EnemyPlayer.MaxHp}");
+    _debugOverlay.AddWatch("mode", () => _mode.ToString());
+    _debugOverlay.AddWatch("chip cd", () => _chipCooldown > 0 ? $"{_chipCooldown:0.0}s" : "ready");
   }
 
   public override void Leaving() => _sceneManager.RemoveScene("Battle");
@@ -242,10 +247,10 @@ public class PlayState : GameState
     Player player = _battleScene.GetPlayer();
     EnemyPlayer enemy = _battleScene.GetEnemyPlayer();
 
-    DrawHpBar(spriteBatch, new Rectangle(20, 20, 240, 22), player.Hp, Player.MaxHp, new Color(80, 200, 140));
+    HpBar.DrawWithBorder(spriteBatch, new Rectangle(20, 20, 240, 22), player.Hp, Player.MaxHp, new Color(80, 200, 140), new Color(220, 220, 230));
     spriteBatch.DrawString(_font, $"HP {player.Hp}", new Vector2(20, 46), Color.White);
 
-    DrawHpBar(spriteBatch, new Rectangle(_viewportWidth - 260, 20, 240, 22), enemy.Hp, EnemyPlayer.MaxHp, new Color(240, 110, 110));
+    HpBar.DrawWithBorder(spriteBatch, new Rectangle(_viewportWidth - 260, 20, 240, 22), enemy.Hp, EnemyPlayer.MaxHp, new Color(240, 110, 110), new Color(220, 220, 230));
     Vector2 enemySize = _font.MeasureString($"HP {enemy.Hp}");
     spriteBatch.DrawString(_font, $"HP {enemy.Hp}", new Vector2(_viewportWidth - 20 - enemySize.X, 46), Color.White);
 
@@ -265,18 +270,6 @@ public class PlayState : GameState
       Vector2 rSize = _font.MeasureString(ready);
       spriteBatch.DrawString(_font, ready, new Vector2(_viewportWidth * 0.5f - rSize.X * 0.5f, 20), new Color(140, 220, 180));
     }
-  }
-
-  private static void DrawHpBar(SpriteBatch spriteBatch, Rectangle bounds, int hp, int max, Color fill)
-  {
-    Primitives.DrawRectangle(spriteBatch, bounds, new Color(25, 30, 45));
-    int fillWidth = (int)(bounds.Width * (hp / (float)max));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(bounds.X, bounds.Y, fillWidth, bounds.Height), fill);
-    Rectangle border = bounds;
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(border.X, border.Y, border.Width, 2), new Color(220, 220, 230));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(border.X, border.Bottom - 2, border.Width, 2), new Color(220, 220, 230));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(border.X, border.Y, 2, border.Height), new Color(220, 220, 230));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(border.Right - 2, border.Y, 2, border.Height), new Color(220, 220, 230));
   }
 
   // ----- Chip selection overlay -----

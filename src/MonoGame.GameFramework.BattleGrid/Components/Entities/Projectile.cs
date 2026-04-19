@@ -1,11 +1,9 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
-using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
-public class Projectile : Entity
+public class Projectile
 {
   private const int ProjectileWidth = 24;
   private const int ProjectileHeight = 10;
@@ -29,9 +27,7 @@ public class Projectile : Entity
     hurtbox = new Rectangle((int)position.X, (int)position.Y, ProjectileWidth, ProjectileHeight);
   }
 
-  public override void LoadContent(ContentManager content) { }
-
-  public override void UnloadContent()
+  public void UnloadContent()
   {
     if (sprite != null)
     {
@@ -40,7 +36,7 @@ public class Projectile : Entity
     }
   }
 
-  public override void Update(GameTime gameTime)
+  public void Update(GameTime gameTime)
   {
     sprite.Position += velocity;
     sprite.DestinationFrame = new Rectangle((int)sprite.Position.X, (int)sprite.Position.Y, ProjectileWidth, ProjectileHeight);

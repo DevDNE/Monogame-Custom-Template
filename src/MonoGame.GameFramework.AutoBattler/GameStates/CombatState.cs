@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.AutoBattler.GameStates;
 
@@ -26,7 +27,7 @@ public class CombatState : GameState
   private readonly int _viewportHeight;
   private readonly Action<Side?> _onCombatEnded;
 
-  private readonly Queue<string> _log = new();
+  private readonly LogBox _log = new(maxLines: 6, baseColor: new Color(220, 220, 235));
   private float _tickAccum;
   private Vector2 _boardOrigin;
   private bool _handlersSubscribed;
@@ -147,11 +148,7 @@ public class CombatState : GameState
     AppendLog($"{e.Victim.Side} {e.Victim.Stats.Name} dies.");
   }
 
-  private void AppendLog(string msg)
-  {
-    _log.Enqueue(msg);
-    while (_log.Count > 6) _log.Dequeue();
-  }
+  private void AppendLog(string msg) => _log.Add(msg);
 
   public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
   {
@@ -189,10 +186,7 @@ public class CombatState : GameState
       Color tint = u.Side == Side.Player ? s.PlayerTint : s.EnemyTint;
       Rectangle inner = new(cell.X + 6, cell.Y + 6, cell.Width - 12, cell.Height - 12);
       Primitives.DrawRectangle(spriteBatch, inner, tint);
-      Rectangle barBg = new(inner.X, inner.Bottom - 8, inner.Width, 5);
-      Primitives.DrawRectangle(spriteBatch, barBg, new Color(25, 30, 45));
-      int fillW = (int)(barBg.Width * (u.Hp / (float)s.MaxHp));
-      Primitives.DrawRectangle(spriteBatch, new Rectangle(barBg.X, barBg.Y, fillW, barBg.Height), new Color(120, 220, 140));
+      HpBar.Draw(spriteBatch, new Rectangle(inner.X, inner.Bottom - 8, inner.Width, 5), u.Hp, s.MaxHp, new Color(120, 220, 140));
       string letter = s.Name[..1];
       Vector2 sz = _font.MeasureString(letter);
       spriteBatch.DrawString(_font, letter, new Vector2(inner.Center.X - sz.X / 2f, inner.Y + 6), Color.White);
@@ -210,18 +204,7 @@ public class CombatState : GameState
   }
 
   private void DrawLog(SpriteBatch spriteBatch)
-  {
-    int y = _viewportHeight - 180;
-    int i = 0;
-    foreach (string msg in _log)
-    {
-      float fade = 0.55f + 0.08f * i;
-      if (fade > 1f) fade = 1f;
-      Color c = new((byte)(220 * fade), (byte)(220 * fade), (byte)(235 * fade));
-      spriteBatch.DrawString(_font, msg, new Vector2(20, y + i * 22), c);
-      i++;
-    }
-  }
+    => _log.Draw(spriteBatch, _font, new Vector2(20, _viewportHeight - 180));
 
   private Rectangle CellRect(int col, int row)
     => new((int)_boardOrigin.X + col * BoardCellSize,

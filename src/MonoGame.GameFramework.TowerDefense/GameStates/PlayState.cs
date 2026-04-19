@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Pooling;
@@ -34,10 +35,12 @@ public class PlayState : GameState
   private MapPath.TileMapOrigin _origin;
   private HashSet<(int col, int row)> _pathCells = new();
   private readonly Dictionary<(int col, int row), Tower> _towers = new();
-  private readonly ObjectPool<Enemy> _enemyPool = new(() => new Enemy(), prewarm: 16);
-  private readonly ObjectPool<Projectile> _projectilePool = new(() => new Projectile(), prewarm: 32);
-  private readonly List<Enemy> _liveEnemies = new();
-  private readonly List<Projectile> _liveProjectiles = new();
+  private readonly PooledEntitySet<Enemy> _enemies = new(
+    new ObjectPool<Enemy>(() => new Enemy(), prewarm: 16),
+    isAlive: e => e.Alive && !e.Leaked);
+  private readonly PooledEntitySet<Projectile> _projectiles = new(
+    new ObjectPool<Projectile>(() => new Projectile(), prewarm: 32),
+    isAlive: p => p.Alive);
 
   private int _gold = StartGold;
   private int _lives = StartLives;
@@ -54,6 +57,13 @@ public class PlayState : GameState
     _font = font;
     _viewportWidth = vw;
     _viewportHeight = vh;
+
+    DebugOverlay overlay = sp.GetService<DebugOverlay>();
+    overlay.AddPooledSetWatch("enemies", _enemies);
+    overlay.AddPooledSetWatch("projectiles", _projectiles);
+    overlay.AddWatch("gold", () => _gold.ToString());
+    overlay.AddWatch("lives", () => _lives.ToString());
+    overlay.AddWatch("wave", () => $"{_waveIndex}/{WaveSizes.Length}");
   }
 
   public override void Entered()
@@ -93,10 +103,8 @@ public class PlayState : GameState
 
   private void ClearLiveObjects()
   {
-    foreach (Enemy e in _liveEnemies) _enemyPool.Return(e);
-    foreach (Projectile p in _liveProjectiles) _projectilePool.Return(p);
-    _liveEnemies.Clear();
-    _liveProjectiles.Clear();
+    _enemies.ReturnAll();
+    _projectiles.ReturnAll();
   }
 
   public override void Update(GameTime gameTime)
@@ -119,9 +127,7 @@ public class PlayState : GameState
   {
     if (!_mouse.WasLeftMouseButtonPressed()) return;
     Vector2 m = _mouse.GetMousePosition();
-    int col = (int)((m.X - _origin.X) / MapPath.CellSize);
-    int row = (int)((m.Y - _origin.Y) / MapPath.CellSize);
-    if (col < 0 || col >= MapPath.Columns || row < 0 || row >= MapPath.Rows) return;
+    if (!GridMath.TryMouseToCell(m, new Vector2(_origin.X, _origin.Y), MapPath.CellSize, MapPath.Columns, MapPath.Rows, out int col, out int row)) return;
     if (_pathCells.Contains((col, row))) return;
     if (_towers.ContainsKey((col, row))) return;
     if (_gold < Tower.Cost) return;
@@ -139,7 +145,7 @@ public class PlayState : GameState
       if (_intermissionRemaining <= 0f) StartNextWave();
       return;
     }
-    if (_enemiesToSpawnInWave == 0 && _liveEnemies.Count == 0)
+    if (_enemiesToSpawnInWave == 0 && _enemies.Count == 0)
     {
       // Wave complete
       _gold += GoldPerWaveClear;
@@ -152,7 +158,7 @@ public class PlayState : GameState
     if (_waveIndex >= WaveSizes.Length)
     {
       // All waves survived = victory
-      if (_liveEnemies.Count == 0) _status = Status.Victory;
+      if (_enemies.Count == 0) _status = Status.Victory;
       return;
     }
     _enemiesToSpawnInWave = WaveSizes[_waveIndex];
@@ -165,65 +171,36 @@ public class PlayState : GameState
     if (_enemiesToSpawnInWave <= 0) return;
     (int c, int r) = MapPath.Waypoints[0];
     Vector2 spawn = MapPath.WorldPosition(_origin, c, r);
-    Enemy e = _enemyPool.Rent();
+    Enemy e = _enemies.Rent();
     e.Spawn(spawn);
-    _liveEnemies.Add(e);
     _enemiesToSpawnInWave--;
   }
 
   private void UpdateEnemies(float dt)
-  {
-    for (int i = _liveEnemies.Count - 1; i >= 0; i--)
-    {
-      Enemy e = _liveEnemies[i];
-      e.Update(dt, _origin);
-      if (e.Leaked)
-      {
-        _lives--;
-        _enemyPool.Return(e);
-        _liveEnemies.RemoveAt(i);
-      }
-      else if (!e.Alive)
-      {
-        _gold += GoldPerKill;
-        _enemyPool.Return(e);
-        _liveEnemies.RemoveAt(i);
-      }
-    }
-  }
+    => _enemies.UpdateAndCull(
+         e => e.Update(dt, _origin),
+         onCull: e => { if (e.Leaked) _lives--; else _gold += GoldPerKill; });
 
   private void UpdateTowers(float dt)
   {
     foreach (Tower t in _towers.Values)
     {
-      Enemy target = t.TryFire(dt, _liveEnemies);
+      Enemy target = t.TryFire(dt, _enemies.Live);
       if (target != null)
       {
-        Projectile p = _projectilePool.Rent();
+        Projectile p = _projectiles.Rent();
         p.Launch(t.Position, target);
-        _liveProjectiles.Add(p);
       }
     }
   }
 
   private void UpdateProjectiles(float dt)
-  {
-    for (int i = _liveProjectiles.Count - 1; i >= 0; i--)
-    {
-      Projectile p = _liveProjectiles[i];
-      p.Update(dt);
-      if (!p.Alive)
-      {
-        _projectilePool.Return(p);
-        _liveProjectiles.RemoveAt(i);
-      }
-    }
-  }
+    => _projectiles.UpdateAndCull(p => p.Update(dt));
 
   private void CheckOutcome()
   {
     if (_lives <= 0) { _status = Status.Defeat; return; }
-    if (_waveIndex >= WaveSizes.Length && _enemiesToSpawnInWave == 0 && _liveEnemies.Count == 0 && _intermissionRemaining <= 0f)
+    if (_waveIndex >= WaveSizes.Length && _enemiesToSpawnInWave == 0 && _enemies.Count == 0 && _intermissionRemaining <= 0f)
     {
       _status = Status.Victory;
     }
@@ -234,8 +211,8 @@ public class PlayState : GameState
     spriteBatch.Begin();
     DrawMap(spriteBatch);
     foreach (Tower t in _towers.Values) t.Draw(spriteBatch);
-    foreach (Enemy e in _liveEnemies) e.Draw(spriteBatch);
-    foreach (Projectile p in _liveProjectiles) p.Draw(spriteBatch);
+    foreach (Enemy e in _enemies.Live) e.Draw(spriteBatch);
+    foreach (Projectile p in _projectiles.Live) p.Draw(spriteBatch);
     DrawHud(spriteBatch);
     if (_status != Status.Playing) DrawOutcome(spriteBatch);
     spriteBatch.End();

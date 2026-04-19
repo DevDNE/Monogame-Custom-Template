@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.AutoBattler.GameStates;
 
@@ -140,9 +141,7 @@ public class ShopState : GameState
 
   private void TryDropCard()
   {
-    Vector2 m = _dragPosition;
-    int col = (int)((m.X - _boardOrigin.X) / BoardCellSize);
-    int row = (int)((m.Y - _boardOrigin.Y) / BoardCellSize);
+    if (!GridMath.TryMouseToCell(_dragPosition, _boardOrigin, BoardCellSize, Board.Columns, Board.Rows, out int col, out int row)) return;
     if (!_model.Board.IsPlayerCell(col, row)) return;
     if (_model.Board.UnitAt(col, row) != null) return;
 
@@ -199,11 +198,7 @@ public class ShopState : GameState
     Color tint = u.Side == Side.Player ? s.PlayerTint : s.EnemyTint;
     Rectangle inner = new(cell.X + 6, cell.Y + 6, cell.Width - 12, cell.Height - 12);
     Primitives.DrawRectangle(spriteBatch, inner, tint);
-    // Mini HP bar
-    Rectangle barBg = new(inner.X, inner.Bottom - 8, inner.Width, 5);
-    Primitives.DrawRectangle(spriteBatch, barBg, new Color(25, 30, 45));
-    int fillW = (int)(barBg.Width * (u.Hp / (float)s.MaxHp));
-    Primitives.DrawRectangle(spriteBatch, new Rectangle(barBg.X, barBg.Y, fillW, barBg.Height), new Color(120, 220, 140));
+    HpBar.Draw(spriteBatch, new Rectangle(inner.X, inner.Bottom - 8, inner.Width, 5), u.Hp, s.MaxHp, new Color(120, 220, 140));
     // Type letter
     string letter = s.Name[..1];
     Vector2 sz = _font.MeasureString(letter);

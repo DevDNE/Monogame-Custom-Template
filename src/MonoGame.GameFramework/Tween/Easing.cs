@@ -1,6 +1,6 @@
 using System;
 
-namespace MonoGame.GameFramework.Tween;
+namespace MonoGame.GameFramework.Tweening;
 
 public static class Easing
 {

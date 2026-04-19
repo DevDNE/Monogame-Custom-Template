@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Content;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MonoGame.GameFramework.Audio;
 public class SoundManager
@@ -23,10 +24,12 @@ public class SoundManager
 
     public void PlaySoundEffect(string name)
     {
-        if (soundEffects.ContainsKey(name))
+        if (soundEffects.TryGetValue(name, out SoundEffect effect))
         {
-            soundEffects[name].Play();
+            effect.Play();
+            return;
         }
+        Debug.WriteLine($"[SoundManager] PlaySoundEffect('{name}') called before LoadSoundEffect. No-op.");
     }
 
     public void LoadSong(string name)
@@ -37,10 +40,12 @@ public class SoundManager
 
     public void PlaySong(string name)
     {
-        if (songs.ContainsKey(name))
+        if (songs.TryGetValue(name, out Song song))
         {
-            MediaPlayer.Play(songs[name]);
+            MediaPlayer.Play(song);
+            return;
         }
+        Debug.WriteLine($"[SoundManager] PlaySong('{name}') called before LoadSong. No-op.");
     }
 
     public void PauseSong() => MediaPlayer.Pause();

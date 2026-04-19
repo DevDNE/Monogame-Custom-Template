@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.Roguelike.GameStates;
 
@@ -23,7 +24,7 @@ public class PlayState : GameState
   private List<Rectangle> _rooms;
   private PlayerActor _player;
   private readonly List<MonsterActor> _monsters = new();
-  private readonly Queue<string> _log = new();
+  private readonly LogBox _log = new(maxLines: 5, fadeStart: 0.5f, fadeStep: 0.1f);
   private int _dungeonLevel = 1;
   private int _currentSeed;
   private bool _gameOver;
@@ -195,11 +196,7 @@ public class PlayState : GameState
     return true;
   }
 
-  private void AppendLog(string msg)
-  {
-    _log.Enqueue(msg);
-    while (_log.Count > 5) _log.Dequeue();
-  }
+  private void AppendLog(string msg) => _log.Add(msg);
 
   public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
   {
@@ -262,17 +259,9 @@ public class PlayState : GameState
     Vector2 hs = _font.MeasureString(hint);
     spriteBatch.DrawString(_font, hint, new Vector2(_viewportWidth - hs.X - 20, 14), new Color(180, 180, 200));
 
-    // Bottom: log (newest last)
     int logY = _viewportHeight - 24;
-    int i = 0;
-    foreach (string msg in _log)
-    {
-      float fade = 0.5f + 0.1f * i;
-      if (fade > 1f) fade = 1f;
-      Color c = new((byte)(220 * fade), (byte)(220 * fade), (byte)(230 * fade));
-      spriteBatch.DrawString(_font, msg, new Vector2(20, logY - (_log.Count - 1 - i) * 22), c);
-      i++;
-    }
+    Vector2 logOrigin = new(20, logY - (_log.Count - 1) * 22);
+    _log.Draw(spriteBatch, _font, logOrigin);
   }
 
   private void DrawGameOver(SpriteBatch spriteBatch)

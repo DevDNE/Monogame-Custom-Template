@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace MonoGame.GameFramework.Tween;
+namespace MonoGame.GameFramework.Tweening;
 
 public class Tween<T>
 {

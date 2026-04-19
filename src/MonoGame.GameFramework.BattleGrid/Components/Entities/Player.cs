@@ -3,14 +3,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
-using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
-public class Player : Entity
+public class Player
 {
   public const int MaxHp = 100;
 
@@ -34,7 +33,7 @@ public class Player : Entity
     _eventManager = serviceProvider.GetService<EventManager>();
   }
 
-  public override void LoadContent(ContentManager content)
+  public void LoadContent(ContentManager content)
   {
     Vector2 pos = BattleGrid.Grid.PlayerCellTopLeft(GridCol, GridRow);
     character = SpriteSheet.Static(
@@ -46,7 +45,7 @@ public class Player : Entity
     _drawManager.AddSprite(character);
   }
 
-  public override void UnloadContent()
+  public void UnloadContent()
   {
     if (character != null)
     {
@@ -57,7 +56,7 @@ public class Player : Entity
     projectiles.Clear();
   }
 
-  public override void Update(GameTime gameTime)
+  public void Update(GameTime gameTime)
   {
     if (!IsAlive) return;
     HandleMove(Keys.W, 0, -1, "up");

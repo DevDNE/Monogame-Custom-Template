@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using MonoGame.GameFramework.Core;
 using MonoGame.GameFramework.Events;
 using MonoGame.GameFramework.Rendering;
 
 namespace MonoGame.GameFramework.BattleGrid.Components.Entities;
 
-public class EnemyPlayer : Entity
+public class EnemyPlayer
 {
   public const int MaxHp = 100;
   public const float ActionInterval = 1.5f;
@@ -40,7 +39,7 @@ public class EnemyPlayer : Entity
     _eventManager = serviceProvider.GetService<EventManager>();
   }
 
-  public override void LoadContent(ContentManager content)
+  public void LoadContent(ContentManager content)
   {
     Vector2 pos = Grid.EnemyCellTopLeft(GridCol, GridRow);
     character = SpriteSheet.Static(
@@ -52,7 +51,7 @@ public class EnemyPlayer : Entity
     _drawManager.AddSprite(character);
   }
 
-  public override void UnloadContent()
+  public void UnloadContent()
   {
     if (character != null)
     {
@@ -63,7 +62,7 @@ public class EnemyPlayer : Entity
     _projectiles.Clear();
   }
 
-  public override void Update(GameTime gameTime)
+  public void Update(GameTime gameTime)
   {
     if (!IsAlive) return;
 
