@@ -8,6 +8,7 @@ using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Testing;
 using MonoGame.GameFramework.Text;
 using MonoGame.GameFramework.UI;
 using MonoGame.GameFramework.BattleGrid.GameStates;
@@ -31,6 +32,7 @@ public class Game1 : Game
     private GameStateManager _gameStateManager;
     private SceneManager _sceneManager;
     private DebugOverlay _debugOverlay;
+    private SmokeHarness _smoke;
 
     public Game1(ServiceProvider serviceProvider)
     {
@@ -60,6 +62,7 @@ public class Game1 : Game
         _gameStateManager = _serviceProvider.GetService<GameStateManager>();
         _sceneManager = _serviceProvider.GetService<SceneManager>();
         _debugOverlay = _serviceProvider.GetService<DebugOverlay>();
+        _smoke = _serviceProvider.GetService<SmokeHarness>();
         base.Initialize();
     }
 
@@ -95,6 +98,7 @@ public class Game1 : Game
         _debugOverlay.Update(gameTime);
         if (!_debugOverlay.ShouldSkipUpdate) _gameStateManager.Update(gameTime);
         base.Update(gameTime);
+        if (_smoke.Tick()) Exit();
     }
 
     protected override void Draw(GameTime gameTime)

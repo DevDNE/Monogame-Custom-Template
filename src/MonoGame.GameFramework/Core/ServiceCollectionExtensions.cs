@@ -7,6 +7,7 @@ using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Persistence;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Testing;
 using MonoGame.GameFramework.Text;
 using MonoGame.GameFramework.Timing;
 using MonoGame.GameFramework.UI;
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<TextManager>();
     services.AddSingleton<UIManager>();
     services.AddSingleton<DebugOverlay>();
+    services.AddSingleton<SmokeHarness>();
     return services;
   }
 }

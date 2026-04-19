@@ -7,6 +7,7 @@ using MonoGame.GameFramework.Debugging;
 using MonoGame.GameFramework.Input;
 using MonoGame.GameFramework.Lifecycle;
 using MonoGame.GameFramework.Rendering;
+using MonoGame.GameFramework.Testing;
 using MonoGame.GameFramework.UI;
 
 namespace MonoGame.GameFramework.AutoBattler;
@@ -25,6 +26,7 @@ public class Game1 : Game
   private UIManager _uiManager;
   private GameStateManager _gameStateManager;
   private DebugOverlay _debugOverlay;
+  private SmokeHarness _smoke;
 
   private readonly GameModel _model = new();
 
@@ -54,6 +56,7 @@ public class Game1 : Game
     _uiManager = _serviceProvider.GetService<UIManager>();
     _gameStateManager = _serviceProvider.GetService<GameStateManager>();
     _debugOverlay = _serviceProvider.GetService<DebugOverlay>();
+    _smoke = _serviceProvider.GetService<SmokeHarness>();
     base.Initialize();
   }
 
@@ -101,6 +104,7 @@ public class Game1 : Game
     _debugOverlay.Update(gameTime);
     if (!_debugOverlay.ShouldSkipUpdate) _gameStateManager.Update(gameTime);
     base.Update(gameTime);
+    if (_smoke.Tick()) Exit();
   }
 
   protected override void Draw(GameTime gameTime)
